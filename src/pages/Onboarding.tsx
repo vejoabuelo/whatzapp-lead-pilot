@@ -1,10 +1,12 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle2, ArrowRight, Building, Users, BriefcaseIcon, Zap } from "lucide-react";
+import { CheckCircle2, ArrowRight, Building, Users, BriefcaseIcon, Zap, Loader2 } from "lucide-react";
+import { useAuth } from "@/providers/AuthProvider";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const steps = [
   {
@@ -40,12 +42,79 @@ const Onboarding = () => {
   const [businessSize, setBusinessSize] = useState("");
   const [targetSegment, setTargetSegment] = useState<string[]>([]);
   const [targetLocation, setTargetLocation] = useState<string[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
   const navigate = useNavigate();
+  const { user, updateProfile } = useAuth();
 
-  const handleNextStep = () => {
+  const handleNextStep = async () => {
+    if (isProcessing) return;
+
+    if (currentStep === 1 && (businessType === "" || businessSize === "")) {
+      toast.error("Preencha todos os campos", {
+        description: "Selecione o tipo e tamanho do seu negócio para continuar."
+      });
+      return;
+    }
+
+    if (currentStep === 2 && (targetSegment.length === 0 || targetLocation.length === 0)) {
+      toast.error("Preencha todos os campos", {
+        description: "Selecione pelo menos um segmento e uma localização para continuar."
+      });
+      return;
+    }
+
+    if (currentStep === 1) {
+      setIsProcessing(true);
+      try {
+        await updateProfile({
+          business_type: businessType,
+          business_size: businessSize
+        });
+      } catch (error) {
+        console.error("Error updating profile:", error);
+        toast.error("Erro ao salvar dados", {
+          description: "Houve um problema ao salvar os dados do seu negócio."
+        });
+        setIsProcessing(false);
+        return;
+      }
+      setIsProcessing(false);
+    }
+
+    if (currentStep === 2 && user) {
+      setIsProcessing(true);
+      try {
+        const { error } = await supabase
+          .from('target_preferences')
+          .upsert({
+            user_id: user.id,
+            target_segments: targetSegment,
+            target_locations: targetLocation
+          }, {
+            onConflict: 'user_id'
+          });
+
+        if (error) throw error;
+      } catch (error) {
+        console.error("Error saving preferences:", error);
+        toast.error("Erro ao salvar preferências", {
+          description: "Houve um problema ao salvar suas preferências de público-alvo."
+        });
+        setIsProcessing(false);
+        return;
+      }
+      setIsProcessing(false);
+    }
+
+    if (currentStep === 3 && user) {
+      // This is where you would typically handle WhatsApp connection
+      // For now, we'll just skip it
+    }
+
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
+      // Complete onboarding
       navigate("/dashboard");
     }
   };
@@ -365,6 +434,7 @@ const Onboarding = () => {
                   <Button
                     variant="outline"
                     onClick={() => setCurrentStep(currentStep - 1)}
+                    disabled={isProcessing}
                   >
                     Voltar
                   </Button>
@@ -372,9 +442,22 @@ const Onboarding = () => {
                   <div></div>
                 )}
 
-                <Button onClick={handleNextStep} className="group">
-                  {currentStep === steps.length - 1 ? "Ir para o Dashboard" : "Continuar"}
-                  <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                <Button 
+                  onClick={handleNextStep} 
+                  className="group"
+                  disabled={isProcessing}
+                >
+                  {isProcessing ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processando...
+                    </>
+                  ) : (
+                    <>
+                      {currentStep === steps.length - 1 ? "Ir para o Dashboard" : "Continuar"}
+                      <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                    </>
+                  )}
                 </Button>
               </div>
             </div>

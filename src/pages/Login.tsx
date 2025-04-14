@@ -1,38 +1,31 @@
 
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { EyeIcon, EyeOffIcon } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { EyeIcon, EyeOffIcon, Loader2 } from "lucide-react";
+import { useAuth } from "@/providers/AuthProvider";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
-  const { toast } = useToast();
+  const { signIn } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulate login API call
-    setTimeout(() => {
+    try {
+      await signIn(email, password);
+    } catch (error) {
+      console.error("Login error:", error);
+    } finally {
       setIsLoading(false);
-      
-      // For demo purposes, always succeed
-      toast({
-        title: "Login realizado com sucesso!",
-        description: "Redirecionando para o dashboard...",
-      });
-      
-      // Redirect to dashboard
-      navigate("/dashboard");
-    }, 1500);
+    }
   };
 
   const toggleShowPassword = () => {
@@ -104,7 +97,12 @@ const Login = () => {
               className="w-full" 
               disabled={isLoading}
             >
-              {isLoading ? "Entrando..." : "Entrar"}
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Entrando...
+                </>
+              ) : "Entrar"}
             </Button>
           </form>
         </CardContent>

@@ -1,12 +1,13 @@
 
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { EyeIcon, EyeOffIcon, CheckCircle2Icon } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { EyeIcon, EyeOffIcon, Loader2 } from "lucide-react";
+import { useAuth } from "@/providers/AuthProvider";
+import { toast } from "sonner";
 
 const Register = () => {
   const [name, setName] = useState("");
@@ -17,45 +18,34 @@ const Register = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
   
-  const navigate = useNavigate();
-  const { toast } = useToast();
+  const { signUp } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (password !== passwordConfirmation) {
-      toast({
-        title: "Senhas não correspondem",
-        description: "Por favor, verifique se as senhas são iguais.",
-        variant: "destructive",
+      toast.error("Senhas não correspondem", {
+        description: "Por favor, verifique se as senhas são iguais."
       });
       return;
     }
     
     if (!acceptTerms) {
-      toast({
-        title: "Termos e Condições",
-        description: "Você precisa aceitar os termos e condições para continuar.",
-        variant: "destructive",
+      toast.error("Termos e Condições", {
+        description: "Você precisa aceitar os termos e condições para continuar."
       });
       return;
     }
 
     setIsLoading(true);
 
-    // Simulate register API call
-    setTimeout(() => {
+    try {
+      await signUp(email, password, name);
+    } catch (error) {
+      console.error("Registration error:", error);
+    } finally {
       setIsLoading(false);
-      
-      // For demo purposes, always succeed
-      toast({
-        title: "Conta criada com sucesso!",
-        description: "Bem-vindo ao WhatsApp Lead Pilot!",
-      });
-      
-      // Redirect to onboarding
-      navigate("/onboarding");
-    }, 1500);
+    }
   };
 
   const toggleShowPassword = () => {
@@ -162,7 +152,12 @@ const Register = () => {
               className="w-full" 
               disabled={isLoading}
             >
-              {isLoading ? "Criando conta..." : "Criar conta"}
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Criando conta...
+                </>
+              ) : "Criar conta"}
             </Button>
           </form>
         </CardContent>
