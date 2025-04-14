@@ -1,12 +1,32 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
+import HeroSection from "@/components/landing/HeroSection";
+import FeaturesSection from "@/components/landing/FeaturesSection";
+import HowItWorksSection from "@/components/landing/HowItWorksSection";
+import TestimonialsSection from "@/components/landing/TestimonialsSection";
+import PricingSection from "@/components/landing/PricingSection";
+import FaqSection from "@/components/landing/FaqSection";
+import CtaSection from "@/components/landing/CtaSection";
+import Header from "@/components/landing/Header";
+import Footer from "@/components/landing/Footer";
 
 const Index = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-gray-600">Start building your amazing project here!</p>
-      </div>
+    <div className="min-h-screen flex flex-col">
+      <Header />
+      
+      <main className="flex-grow">
+        <HeroSection />
+        <FeaturesSection />
+        <HowItWorksSection />
+        <TestimonialsSection />
+        <PricingSection />
+        <FaqSection />
+        <CtaSection />
+      </main>
+      
+      <Footer />
     </div>
   );
 };
