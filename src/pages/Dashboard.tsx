@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,9 +23,11 @@ import {
   Building,
   PlusCircle,
   RefreshCcw,
-  Bell
+  Bell,
+  Loader2
 } from "lucide-react";
 import { toast } from "sonner";
+import { Lead, Campaign } from "@/types/database";
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
@@ -34,13 +37,13 @@ const Dashboard = () => {
     data: leads,
     isLoading: isLeadsLoading,
     fetchData: fetchLeads
-  } = useSupabaseData('leads', { fetchOnMount: true });
+  } = useSupabaseData<Lead>('leads', { fetchOnMount: true });
   
   const { 
     data: campaigns,
     isLoading: isCampaignsLoading,
     fetchData: fetchCampaigns
-  } = useSupabaseData('campaigns', { 
+  } = useSupabaseData<Campaign>('campaigns', { 
     fetchOnMount: true,
     queryFilter: (query) => query.eq('user_id', user?.id || '')
   });
