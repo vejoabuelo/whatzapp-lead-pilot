@@ -2,9 +2,13 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { Database } from '@/integrations/supabase/types';
+
+// Define the valid table names based on the database schema
+type TableName = keyof Database['public']['Tables'];
 
 export function useSupabaseData<T>(
-  tableName: string,
+  tableName: TableName,
   options?: {
     defaultData?: T[];
     queryFilter?: (query: any) => any;
@@ -39,7 +43,7 @@ export function useSupabaseData<T>(
     }
   };
 
-  const addItem = async (item: Partial<T>) => {
+  const addItem = async (item: any) => {
     try {
       const { data: result, error } = await supabase
         .from(tableName)
@@ -58,7 +62,7 @@ export function useSupabaseData<T>(
     }
   };
 
-  const updateItem = async (id: string, updates: Partial<T>) => {
+  const updateItem = async (id: string, updates: any) => {
     try {
       const { data: result, error } = await supabase
         .from(tableName)
