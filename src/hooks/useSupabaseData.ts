@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Database } from '@/integrations/supabase/types';
@@ -12,11 +12,18 @@ export function useSupabaseData<T>(
   options?: {
     defaultData?: T[];
     queryFilter?: (query: any) => any;
+    fetchOnMount?: boolean;
   }
 ) {
   const [data, setData] = useState<T[]>(options?.defaultData || []);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    if (options?.fetchOnMount) {
+      fetchData();
+    }
+  }, []);
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -108,5 +115,6 @@ export function useSupabaseData<T>(
     addItem,
     updateItem,
     deleteItem,
+    refetch: fetchData
   };
 }

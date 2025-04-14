@@ -1,10 +1,12 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import Sidebar from "@/components/dashboard/Sidebar";
+import { useSupabaseData } from "@/hooks/useSupabaseData";
+import { useUserPlan } from "@/hooks/useUserPlan";
+import { useAuth } from "@/providers/AuthProvider";
 import { 
   BarChart3, 
   MessageSquare, 
@@ -22,15 +24,37 @@ import {
   RefreshCcw,
   Bell
 } from "lucide-react";
+import { toast } from "sonner";
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
+  const { user } = useAuth();
+  const { userPlan, isLoading: isPlanLoading } = useUserPlan();
+  const { 
+    data: leads,
+    isLoading: isLeadsLoading,
+    fetchData: fetchLeads
+  } = useSupabaseData('leads', { fetchOnMount: true });
+  
+  const { 
+    data: campaigns,
+    isLoading: isCampaignsLoading,
+    fetchData: fetchCampaigns
+  } = useSupabaseData('campaigns', { 
+    fetchOnMount: true,
+    queryFilter: (query) => query.eq('user_id', user?.id || '')
+  });
 
-  // Mock data for dashboard
+  const handleRefresh = () => {
+    fetchLeads();
+    fetchCampaigns();
+    toast.success("Dados atualizados com sucesso");
+  };
+
   const stats = [
     {
       title: "Total de Leads",
-      value: "2,458",
+      value: leads?.length.toString() || "0",
       change: "+12.5%",
       changeType: "positive",
       icon: <Users className="h-5 w-5 text-blue-600" />
@@ -51,14 +75,20 @@ const Dashboard = () => {
     },
     {
       title: "Campanhas Ativas",
-      value: "3",
+      value: campaigns?.filter(c => c.status === 'active').length.toString() || "0",
       change: "+1",
       changeType: "positive",
       icon: <Send className="h-5 w-5 text-purple-600" />
     }
   ];
 
-  const recentLeads = [
+  const recentLeads = leads?.slice(0, 5).map(lead => ({
+    company: lead.company_name,
+    segment: lead.cnae_description || "Não especificado",
+    city: lead.city || "Não especificado",
+    date: new Date(lead.created_at).toLocaleDateString('pt-BR'),
+    status: "Novo"
+  })) || [
     {
       company: "Academia Fitness Center",
       segment: "Academias",
@@ -96,7 +126,14 @@ const Dashboard = () => {
     }
   ];
 
-  const recentCampaigns = [
+  const recentCampaigns = campaigns?.slice(0, 3).map(campaign => ({
+    name: campaign.name,
+    leads: 324,
+    sent: 256,
+    responses: 28,
+    date: new Date(campaign.created_at).toLocaleDateString('pt-BR'),
+    status: campaign.status === 'active' ? "Em andamento" : "Concluída"
+  })) || [
     {
       name: "Restaurantes - São Paulo",
       leads: 324,
@@ -150,7 +187,7 @@ const Dashboard = () => {
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-semibold text-gray-800">Dashboard</h1>
             <div className="flex items-center space-x-4">
-              <Button variant="outline" size="sm" className="gap-2">
+              <Button variant="outline" size="sm" className="gap-2" onClick={handleRefresh}>
                 <RefreshCcw size={16} />
                 <span className="hidden sm:inline">Atualizar</span>
               </Button>
@@ -242,24 +279,39 @@ const Dashboard = () => {
                               </tr>
                             </thead>
                             <tbody>
-                              {recentLeads.map((lead, index) => (
-                                <tr key={index} className="border-b border-gray-200 hover:bg-gray-50">
-                                  <td className="py-3 px-4">{lead.company}</td>
-                                  <td className="py-3 px-4 text-gray-500">{lead.segment}</td>
-                                  <td className="py-3 px-4 text-gray-500">{lead.city}</td>
-                                  <td className="py-3 px-4 text-gray-500">{lead.date}</td>
-                                  <td className="py-3 px-4">
-                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(lead.status)}`}>
-                                      {lead.status}
-                                    </span>
-                                  </td>
-                                  <td className="py-3 px-4 text-right">
-                                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                                      <MoreHorizontal size={16} />
-                                    </Button>
+                              {isLeadsLoading ? (
+                                <tr>
+                                  <td colSpan={6} className="py-8 text-center">
+                                    <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+                                    <p className="mt-2 text-sm text-gray-500">Carregando leads...</p>
                                   </td>
                                 </tr>
-                              ))}
+                              ) : recentLeads.length === 0 ? (
+                                <tr>
+                                  <td colSpan={6} className="py-8 text-center text-gray-500">
+                                    Nenhum lead encontrado
+                                  </td>
+                                </tr>
+                              ) : (
+                                recentLeads.map((lead, index) => (
+                                  <tr key={index} className="border-b border-gray-200 hover:bg-gray-50">
+                                    <td className="py-3 px-4">{lead.company}</td>
+                                    <td className="py-3 px-4 text-gray-500">{lead.segment}</td>
+                                    <td className="py-3 px-4 text-gray-500">{lead.city}</td>
+                                    <td className="py-3 px-4 text-gray-500">{lead.date}</td>
+                                    <td className="py-3 px-4">
+                                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(lead.status)}`}>
+                                        {lead.status}
+                                      </span>
+                                    </td>
+                                    <td className="py-3 px-4 text-right">
+                                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                                        <MoreHorizontal size={16} />
+                                      </Button>
+                                    </td>
+                                  </tr>
+                                ))
+                              )}
                             </tbody>
                           </table>
                         </div>
@@ -298,25 +350,40 @@ const Dashboard = () => {
                               </tr>
                             </thead>
                             <tbody>
-                              {recentCampaigns.map((campaign, index) => (
-                                <tr key={index} className="border-b border-gray-200 hover:bg-gray-50">
-                                  <td className="py-3 px-4">{campaign.name}</td>
-                                  <td className="py-3 px-4 text-gray-500">{campaign.leads}</td>
-                                  <td className="py-3 px-4 text-gray-500">{campaign.sent}</td>
-                                  <td className="py-3 px-4 text-gray-500">{campaign.responses}</td>
-                                  <td className="py-3 px-4 text-gray-500">{campaign.date}</td>
-                                  <td className="py-3 px-4">
-                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(campaign.status)}`}>
-                                      {campaign.status}
-                                    </span>
-                                  </td>
-                                  <td className="py-3 px-4 text-right">
-                                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                                      <MoreHorizontal size={16} />
-                                    </Button>
+                              {isCampaignsLoading ? (
+                                <tr>
+                                  <td colSpan={7} className="py-8 text-center">
+                                    <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+                                    <p className="mt-2 text-sm text-gray-500">Carregando campanhas...</p>
                                   </td>
                                 </tr>
-                              ))}
+                              ) : recentCampaigns.length === 0 ? (
+                                <tr>
+                                  <td colSpan={7} className="py-8 text-center text-gray-500">
+                                    Nenhuma campanha encontrada
+                                  </td>
+                                </tr>
+                              ) : (
+                                recentCampaigns.map((campaign, index) => (
+                                  <tr key={index} className="border-b border-gray-200 hover:bg-gray-50">
+                                    <td className="py-3 px-4">{campaign.name}</td>
+                                    <td className="py-3 px-4 text-gray-500">{campaign.leads}</td>
+                                    <td className="py-3 px-4 text-gray-500">{campaign.sent}</td>
+                                    <td className="py-3 px-4 text-gray-500">{campaign.responses}</td>
+                                    <td className="py-3 px-4 text-gray-500">{campaign.date}</td>
+                                    <td className="py-3 px-4">
+                                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(campaign.status)}`}>
+                                        {campaign.status}
+                                      </span>
+                                    </td>
+                                    <td className="py-3 px-4 text-right">
+                                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                                        <MoreHorizontal size={16} />
+                                      </Button>
+                                    </td>
+                                  </tr>
+                                ))
+                              )}
                             </tbody>
                           </table>
                         </div>
@@ -333,50 +400,68 @@ const Dashboard = () => {
                 <CardDescription>Utilização do seu plano atual</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-6">
-                  <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <div className="flex items-center">
-                        <Users className="h-4 w-4 text-gray-500 mr-2" />
-                        <span className="text-sm font-medium">Leads Disponíveis</span>
+                {isPlanLoading ? (
+                  <div className="flex flex-col items-center justify-center py-6">
+                    <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                    <p className="mt-2 text-sm text-gray-500">Carregando informações do plano...</p>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <div className="flex items-center">
+                          <Users className="h-4 w-4 text-gray-500 mr-2" />
+                          <span className="text-sm font-medium">Leads Disponíveis</span>
+                        </div>
+                        <span className="text-sm font-medium">{leads?.length || 0} / {userPlan?.plan.leads_limit || 100}</span>
                       </div>
-                      <span className="text-sm font-medium">50 / 100</span>
+                      <Progress value={((leads?.length || 0) / (userPlan?.plan.leads_limit || 100)) * 100} className="h-2" />
+                      <p className="text-xs text-gray-500 mt-1">{leads?.length || 0} leads utilizados neste mês</p>
                     </div>
-                    <Progress value={50} className="h-2" />
-                    <p className="text-xs text-gray-500 mt-1">50 leads utilizados neste mês</p>
-                  </div>
 
-                  <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <div className="flex items-center">
-                        <MessageSquare className="h-4 w-4 text-gray-500 mr-2" />
-                        <span className="text-sm font-medium">Mensagens Restantes</span>
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <div className="flex items-center">
+                          <MessageSquare className="h-4 w-4 text-gray-500 mr-2" />
+                          <span className="text-sm font-medium">Mensagens Restantes</span>
+                        </div>
+                        <span className="text-sm font-medium">20 / {userPlan?.plan.messages_limit || 50}</span>
                       </div>
-                      <span className="text-sm font-medium">20 / 50</span>
+                      <Progress value={(20 / (userPlan?.plan.messages_limit || 50)) * 100} className="h-2" />
+                      <p className="text-xs text-gray-500 mt-1">30 mensagens enviadas neste mês</p>
                     </div>
-                    <Progress value={60} className="h-2" />
-                    <p className="text-xs text-gray-500 mt-1">30 mensagens enviadas neste mês</p>
-                  </div>
 
-                  <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <div className="flex items-center">
-                        <Send className="h-4 w-4 text-gray-500 mr-2" />
-                        <span className="text-sm font-medium">Campanhas Ativas</span>
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <div className="flex items-center">
+                          <Send className="h-4 w-4 text-gray-500 mr-2" />
+                          <span className="text-sm font-medium">Campanhas Ativas</span>
+                        </div>
+                        <span className="text-sm font-medium">
+                          {campaigns?.filter(c => c.status === 'active').length || 0} / {userPlan?.plan.campaigns_limit || 1}
+                        </span>
                       </div>
-                      <span className="text-sm font-medium">1 / 1</span>
+                      <Progress 
+                        value={((campaigns?.filter(c => c.status === 'active').length || 0) / (userPlan?.plan.campaigns_limit || 1)) * 100} 
+                        className="h-2" 
+                      />
+                      {((campaigns?.filter(c => c.status === 'active').length || 0) >= (userPlan?.plan.campaigns_limit || 1)) ? (
+                        <p className="text-xs text-gray-500 mt-1">Limite máximo atingido</p>
+                      ) : (
+                        <p className="text-xs text-gray-500 mt-1">
+                          {campaigns?.filter(c => c.status === 'active').length || 0} campanhas ativas
+                        </p>
+                      )}
                     </div>
-                    <Progress value={100} className="h-2" />
-                    <p className="text-xs text-gray-500 mt-1">Limite máximo atingido</p>
-                  </div>
 
-                  <div className="pt-2">
-                    <Button className="w-full">Fazer Upgrade</Button>
-                    <p className="text-xs text-center text-gray-500 mt-2">
-                      Plano atual: <span className="font-medium">Gratuito</span>
-                    </p>
+                    <div className="pt-2">
+                      <Button className="w-full">Fazer Upgrade</Button>
+                      <p className="text-xs text-center text-gray-500 mt-2">
+                        Plano atual: <span className="font-medium">{userPlan?.plan.name || "Gratuito"}</span>
+                      </p>
+                    </div>
                   </div>
-                </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -439,7 +524,7 @@ const Dashboard = () => {
                 <div className="mt-6 pt-4 border-t border-gray-200">
                   <div className="flex items-center justify-between">
                     <p className="text-sm font-medium">Total de Leads Disponíveis</p>
-                    <p className="text-sm font-medium">2,458</p>
+                    <p className="text-sm font-medium">{leads?.length || 0}</p>
                   </div>
                 </div>
               </CardContent>
@@ -455,7 +540,9 @@ const Dashboard = () => {
                   <div>
                     <div className="flex justify-between items-center mb-1">
                       <span className="text-sm">São Paulo</span>
-                      <span className="text-sm font-medium">923</span>
+                      <span className="text-sm font-medium">
+                        {leads?.filter(lead => lead.state === 'SP' || lead.city?.includes('São Paulo')).length || 0}
+                      </span>
                     </div>
                     <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
                       <div className="h-full bg-blue-500 rounded-full" style={{ width: "38%" }}></div>
@@ -464,7 +551,9 @@ const Dashboard = () => {
                   <div>
                     <div className="flex justify-between items-center mb-1">
                       <span className="text-sm">Rio de Janeiro</span>
-                      <span className="text-sm font-medium">587</span>
+                      <span className="text-sm font-medium">
+                        {leads?.filter(lead => lead.state === 'RJ' || lead.city?.includes('Rio de Janeiro')).length || 0}
+                      </span>
                     </div>
                     <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
                       <div className="h-full bg-green-500 rounded-full" style={{ width: "24%" }}></div>
@@ -473,7 +562,9 @@ const Dashboard = () => {
                   <div>
                     <div className="flex justify-between items-center mb-1">
                       <span className="text-sm">Belo Horizonte</span>
-                      <span className="text-sm font-medium">341</span>
+                      <span className="text-sm font-medium">
+                        {leads?.filter(lead => lead.city?.includes('Belo Horizonte')).length || 0}
+                      </span>
                     </div>
                     <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
                       <div className="h-full bg-purple-500 rounded-full" style={{ width: "14%" }}></div>
@@ -482,7 +573,9 @@ const Dashboard = () => {
                   <div>
                     <div className="flex justify-between items-center mb-1">
                       <span className="text-sm">Brasília</span>
-                      <span className="text-sm font-medium">298</span>
+                      <span className="text-sm font-medium">
+                        {leads?.filter(lead => lead.city?.includes('Brasília')).length || 0}
+                      </span>
                     </div>
                     <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
                       <div className="h-full bg-yellow-500 rounded-full" style={{ width: "12%" }}></div>
@@ -491,7 +584,17 @@ const Dashboard = () => {
                   <div>
                     <div className="flex justify-between items-center mb-1">
                       <span className="text-sm">Outros</span>
-                      <span className="text-sm font-medium">309</span>
+                      <span className="text-sm font-medium">
+                        {(leads?.length || 0) - 
+                          (leads?.filter(lead => 
+                            lead.state === 'SP' || 
+                            lead.city?.includes('São Paulo') || 
+                            lead.state === 'RJ' || 
+                            lead.city?.includes('Rio de Janeiro') || 
+                            lead.city?.includes('Belo Horizonte') || 
+                            lead.city?.includes('Brasília')
+                          ).length || 0)}
+                      </span>
                     </div>
                     <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
                       <div className="h-full bg-gray-500 rounded-full" style={{ width: "12%" }}></div>
@@ -514,29 +617,36 @@ const Dashboard = () => {
                 <CardDescription>Últimas empresas adicionadas à base</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {recentLeads.slice(0, 4).map((lead, index) => (
-                    <div key={index} className="flex items-start gap-3 p-3 bg-gray-50 rounded-md">
-                      <div className="w-10 h-10 bg-gray-200 rounded-md flex items-center justify-center flex-shrink-0">
-                        <Building size={20} className="text-gray-500" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-sm">{lead.company}</p>
-                        <div className="flex items-center mt-1">
-                          <span className="text-xs text-gray-500">{lead.segment}</span>
-                          <span className="mx-1 text-gray-300">•</span>
-                          <span className="text-xs text-gray-500">{lead.city}</span>
+                {isLeadsLoading ? (
+                  <div className="flex flex-col items-center justify-center py-6">
+                    <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                    <p className="mt-2 text-sm text-gray-500">Carregando leads...</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {recentLeads.slice(0, 4).map((lead, index) => (
+                      <div key={index} className="flex items-start gap-3 p-3 bg-gray-50 rounded-md">
+                        <div className="w-10 h-10 bg-gray-200 rounded-md flex items-center justify-center flex-shrink-0">
+                          <Building size={20} className="text-gray-500" />
                         </div>
-                        <div className="flex items-center justify-between mt-2">
-                          <span className="text-xs text-gray-500">{lead.date}</span>
-                          <span className={`text-xs px-2 py-0.5 rounded-full ${getStatusColor(lead.status)}`}>
-                            {lead.status}
-                          </span>
+                        <div>
+                          <p className="font-medium text-sm">{lead.company}</p>
+                          <div className="flex items-center mt-1">
+                            <span className="text-xs text-gray-500">{lead.segment}</span>
+                            <span className="mx-1 text-gray-300">•</span>
+                            <span className="text-xs text-gray-500">{lead.city}</span>
+                          </div>
+                          <div className="flex items-center justify-between mt-2">
+                            <span className="text-xs text-gray-500">{lead.date}</span>
+                            <span className={`text-xs px-2 py-0.5 rounded-full ${getStatusColor(lead.status)}`}>
+                              {lead.status}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
 
                 <div className="mt-6 pt-4 border-t border-gray-200">
                   <Button variant="outline" className="w-full flex items-center gap-2">
