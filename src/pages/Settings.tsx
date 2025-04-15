@@ -96,63 +96,56 @@ const Settings = () => {
             <div className="col-span-12 md:col-span-3">
               <Card>
                 <CardContent className="p-4">
-                  <Tabs
-                    orientation="vertical" 
-                    value={activeTab} 
-                    onValueChange={setActiveTab}
-                    className="h-full"
-                  >
-                    <TabsList className="flex flex-col items-stretch h-auto bg-transparent space-y-1">
-                      <TabsTrigger 
-                        value="account" 
-                        className="justify-start text-left px-3 py-2 h-auto data-[state=active]:bg-gray-100"
-                      >
-                        <User size={16} className="mr-2" />
-                        Perfil da Conta
-                      </TabsTrigger>
-                      <TabsTrigger 
-                        value="security" 
-                        className="justify-start text-left px-3 py-2 h-auto data-[state=active]:bg-gray-100"
-                      >
-                        <Lock size={16} className="mr-2" />
-                        Segurança
-                      </TabsTrigger>
-                      <TabsTrigger 
-                        value="notifications" 
-                        className="justify-start text-left px-3 py-2 h-auto data-[state=active]:bg-gray-100"
-                      >
-                        <BellRing size={16} className="mr-2" />
-                        Notificações
-                      </TabsTrigger>
-                      <TabsTrigger 
-                        value="connections" 
-                        className="justify-start text-left px-3 py-2 h-auto data-[state=active]:bg-gray-100"
-                      >
-                        <Smartphone size={16} className="mr-2" />
-                        Conexões
-                      </TabsTrigger>
-                      <TabsTrigger 
-                        value="messaging" 
-                        className="justify-start text-left px-3 py-2 h-auto data-[state=active]:bg-gray-100"
-                      >
-                        <MessageSquare size={16} className="mr-2" />
-                        Mensagens
-                      </TabsTrigger>
-                      <TabsTrigger 
-                        value="billing" 
-                        className="justify-start text-left px-3 py-2 h-auto data-[state=active]:bg-gray-100"
-                      >
-                        <CreditCard size={16} className="mr-2" />
-                        Faturamento
-                      </TabsTrigger>
-                    </TabsList>
-                  </Tabs>
+                  <div className="flex flex-col items-stretch h-auto space-y-1">
+                    <button 
+                      onClick={() => setActiveTab("account")}
+                      className={`flex items-center justify-start text-left px-3 py-2 h-auto rounded-md ${activeTab === "account" ? "bg-gray-100" : "hover:bg-gray-50"}`}
+                    >
+                      <User size={16} className="mr-2" />
+                      Perfil da Conta
+                    </button>
+                    <button 
+                      onClick={() => setActiveTab("security")}
+                      className={`flex items-center justify-start text-left px-3 py-2 h-auto rounded-md ${activeTab === "security" ? "bg-gray-100" : "hover:bg-gray-50"}`}
+                    >
+                      <Lock size={16} className="mr-2" />
+                      Segurança
+                    </button>
+                    <button 
+                      onClick={() => setActiveTab("notifications")}
+                      className={`flex items-center justify-start text-left px-3 py-2 h-auto rounded-md ${activeTab === "notifications" ? "bg-gray-100" : "hover:bg-gray-50"}`}
+                    >
+                      <BellRing size={16} className="mr-2" />
+                      Notificações
+                    </button>
+                    <button 
+                      onClick={() => setActiveTab("connections")}
+                      className={`flex items-center justify-start text-left px-3 py-2 h-auto rounded-md ${activeTab === "connections" ? "bg-gray-100" : "hover:bg-gray-50"}`}
+                    >
+                      <Smartphone size={16} className="mr-2" />
+                      Conexões
+                    </button>
+                    <button 
+                      onClick={() => setActiveTab("messaging")}
+                      className={`flex items-center justify-start text-left px-3 py-2 h-auto rounded-md ${activeTab === "messaging" ? "bg-gray-100" : "hover:bg-gray-50"}`}
+                    >
+                      <MessageSquare size={16} className="mr-2" />
+                      Mensagens
+                    </button>
+                    <button 
+                      onClick={() => setActiveTab("billing")}
+                      className={`flex items-center justify-start text-left px-3 py-2 h-auto rounded-md ${activeTab === "billing" ? "bg-gray-100" : "hover:bg-gray-50"}`}
+                    >
+                      <CreditCard size={16} className="mr-2" />
+                      Faturamento
+                    </button>
+                  </div>
                 </CardContent>
               </Card>
             </div>
 
             <div className="col-span-12 md:col-span-9">
-              <TabsContent value="account" className="m-0">
+              {activeTab === "account" && (
                 <Card>
                   <CardHeader>
                     <CardTitle>Perfil da Conta</CardTitle>
@@ -217,9 +210,9 @@ const Settings = () => {
                     </Button>
                   </CardContent>
                 </Card>
-              </TabsContent>
+              )}
 
-              <TabsContent value="security" className="m-0">
+              {activeTab === "security" && (
                 <Card>
                   <CardHeader>
                     <CardTitle>Segurança</CardTitle>
@@ -284,9 +277,9 @@ const Settings = () => {
                     </div>
                   </CardContent>
                 </Card>
-              </TabsContent>
+              )}
 
-              <TabsContent value="notifications" className="m-0">
+              {activeTab === "notifications" && (
                 <Card>
                   <CardHeader>
                     <CardTitle>Notificações</CardTitle>
@@ -363,9 +356,9 @@ const Settings = () => {
                     </Button>
                   </CardContent>
                 </Card>
-              </TabsContent>
+              )}
 
-              <TabsContent value="connections" className="m-0">
+              {activeTab === "connections" && (
                 <Card>
                   <CardHeader>
                     <CardTitle>Conexões</CardTitle>
@@ -381,9 +374,9 @@ const Settings = () => {
                     </div>
                   </CardContent>
                 </Card>
-              </TabsContent>
+              )}
 
-              <TabsContent value="messaging" className="m-0">
+              {activeTab === "messaging" && (
                 <Card>
                   <CardHeader>
                     <CardTitle>Configurações de Mensagens</CardTitle>
@@ -430,9 +423,9 @@ const Settings = () => {
                     </Button>
                   </CardContent>
                 </Card>
-              </TabsContent>
+              )}
 
-              <TabsContent value="billing" className="m-0">
+              {activeTab === "billing" && (
                 <Card>
                   <CardHeader>
                     <CardTitle>Faturamento</CardTitle>
@@ -467,7 +460,7 @@ const Settings = () => {
                     </div>
                   </CardContent>
                 </Card>
-              </TabsContent>
+              )}
             </div>
           </div>
         </main>
