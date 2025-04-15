@@ -6,19 +6,22 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import Sidebar from "@/components/dashboard/Sidebar";
 import { useWhatsappConnections } from "@/hooks/useWhatsappConnections";
+import { useWhatsAppIntegration } from "@/hooks/useWhatsAppIntegration";
+import { QRCodeScanner } from "@/components/whatsapp/QRCodeScanner";
 import { MessageSquare, Plus, Search, Filter, ArrowLeft, RefreshCcw, Loader2, Smartphone } from "lucide-react";
 import { toast } from "sonner";
 
 const Messages = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const { connections, isLoading, addConnection } = useWhatsappConnections();
+  const { qrCode, isConnecting, startConnection } = useWhatsAppIntegration();
 
   const handleAddConnection = async () => {
     const name = prompt("Nome da conexão:");
     if (name) {
-      const result = await addConnection(name);
-      if (result) {
-        toast.success("Conexão adicionada com sucesso");
+      const connection = await addConnection(name);
+      if (connection) {
+        startConnection(connection.id);
       }
     }
   };
