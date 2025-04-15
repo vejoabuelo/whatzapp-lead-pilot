@@ -11,6 +11,13 @@ import Register from "./pages/Register";
 import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
 import Prospection from "./pages/Prospection";
+import Messages from "./pages/Messages";
+import Campaigns from "./pages/Campaigns";
+import NewCampaign from "./pages/NewCampaign";
+import Reports from "./pages/Reports";
+import Team from "./pages/Team";
+import Settings from "./pages/Settings";
+import Pricing from "./pages/Pricing";
 import NotFound from "./pages/NotFound";
 import PrivateRoute from "./components/PrivateRoute";
 
@@ -50,6 +57,58 @@ const App = () => (
                   <Prospection />
                 </PrivateRoute>
               } 
+            />
+            <Route 
+              path="/messages" 
+              element={
+                <PrivateRoute>
+                  <Messages />
+                </PrivateRoute>
+              } 
+            />
+            <Route 
+              path="/campaigns" 
+              element={
+                <PrivateRoute>
+                  <Campaigns />
+                </PrivateRoute>
+              } 
+            />
+            <Route 
+              path="/campaigns/new" 
+              element={
+                <PrivateRoute>
+                  <NewCampaign />
+                </PrivateRoute>
+              } 
+            />
+            <Route 
+              path="/reports" 
+              element={
+                <PrivateRoute>
+                  <Reports />
+                </PrivateRoute>
+              } 
+            />
+            <Route 
+              path="/team" 
+              element={
+                <PrivateRoute>
+                  <Team />
+                </PrivateRoute>
+              } 
+            />
+            <Route 
+              path="/settings" 
+              element={
+                <PrivateRoute>
+                  <Settings />
+                </PrivateRoute>
+              } 
+            />
+            <Route 
+              path="/pricing" 
+              element={<Pricing />} 
             />
             <Route path="*" element={<NotFound />} />
           </Routes>
