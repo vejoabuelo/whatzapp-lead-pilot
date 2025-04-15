@@ -12,19 +12,19 @@ export function useWhatsAppIntegration() {
   const startConnection = useCallback(async (connectionId: string) => {
     setIsConnecting(true);
     try {
-      const response = await getQRCode();
-      setQrCode(response.qrCode);
+      const { qrCode: newQrCode, instanceId } = await getQRCode();
+      setQrCode(newQrCode);
       
       // Start polling for connection status
       const statusCheck = setInterval(async () => {
-        const status = await checkConnectionStatus(response.sessionId);
+        const status = await checkConnectionStatus();
         if (status.connected) {
           clearInterval(statusCheck);
           setQrCode(null);
           setIsConnecting(false);
           await updateConnection(connectionId, { 
             status: 'connected',
-            session_id: response.sessionId 
+            sessionId: status.instanceId 
           });
           toast.success('WhatsApp conectado com sucesso!');
         }
@@ -49,7 +49,7 @@ export function useWhatsAppIntegration() {
 
   const sendMessage = useCallback(async (phone: string, message: string) => {
     try {
-      await sendWhatsAppMessage({ phone, message });
+      const response = await sendWhatsAppMessage({ phone, message });
       toast.success('Mensagem enviada com sucesso!');
       return true;
     } catch (error) {

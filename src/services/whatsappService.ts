@@ -2,13 +2,14 @@
 interface WhatsAppMessage {
   phone: string;
   message: string;
+  delayMessage?: number;
 }
 
-export const WHATSAPP_API_URL = "https://api.wppconnect.io/"; // Base URL for the API
+export const WHATSAPP_API_URL = "https://api.w-api.app/v1";
 
 export async function sendWhatsAppMessage({ phone, message }: WhatsAppMessage) {
   try {
-    const response = await fetch(`${WHATSAPP_API_URL}/send-message`, {
+    const response = await fetch(`${WHATSAPP_API_URL}/message/send-text?instanceId=${import.meta.env.VITE_WHATSAPP_INSTANCE_ID}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -17,6 +18,7 @@ export async function sendWhatsAppMessage({ phone, message }: WhatsAppMessage) {
       body: JSON.stringify({
         phone,
         message,
+        delayMessage: 5 // 5 segundos de delay entre mensagens
       })
     });
 
@@ -33,10 +35,9 @@ export async function sendWhatsAppMessage({ phone, message }: WhatsAppMessage) {
 
 export async function getQRCode() {
   try {
-    const response = await fetch(`${WHATSAPP_API_URL}/start-session`, {
-      method: 'POST',
+    const response = await fetch(`${WHATSAPP_API_URL}/instance/qr-code?instanceId=${import.meta.env.VITE_WHATSAPP_INSTANCE_ID}&image=enable`, {
+      method: 'GET',
       headers: {
-        'Content-Type': 'application/json',
         'Authorization': `Bearer ${import.meta.env.VITE_WHATSAPP_API_KEY}`
       }
     });
@@ -45,16 +46,20 @@ export async function getQRCode() {
       throw new Error('Failed to get QR code');
     }
 
-    return await response.json();
+    const data = await response.json();
+    return {
+      qrCode: data.qrcode,
+      instanceId: data.instanceId 
+    };
   } catch (error) {
     console.error('Error getting QR code:', error);
     throw error;
   }
 }
 
-export async function checkConnectionStatus(sessionId: string) {
+export async function checkConnectionStatus() {
   try {
-    const response = await fetch(`${WHATSAPP_API_URL}/status/${sessionId}`, {
+    const response = await fetch(`${WHATSAPP_API_URL}/instance/status-instance?instanceId=${import.meta.env.VITE_WHATSAPP_INSTANCE_ID}`, {
       headers: {
         'Authorization': `Bearer ${import.meta.env.VITE_WHATSAPP_API_KEY}`
       }
@@ -64,7 +69,11 @@ export async function checkConnectionStatus(sessionId: string) {
       throw new Error('Failed to check connection status');
     }
 
-    return await response.json();
+    const data = await response.json();
+    return {
+      connected: data.connected,
+      instanceId: data.instanceId
+    };
   } catch (error) {
     console.error('Error checking connection status:', error);
     throw error;
