@@ -8,13 +8,14 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import Sidebar from "@/components/dashboard/Sidebar";
-import { ArrowLeft, Save, User, Lock, BellRing, Smartphone, MessageSquare, CreditCard } from "lucide-react";
+import { ArrowLeft, Save, User, Lock, BellRing, Smartphone, MessageSquare, CreditCard, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/providers/AuthProvider";
 
 const Settings = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("account");
+  const [isLoading, setIsLoading] = useState(false);
   const [formState, setFormState] = useState({
     fullName: user?.user_metadata?.full_name || "",
     email: user?.email || "",
@@ -39,29 +40,38 @@ const Settings = () => {
   };
 
   const handleSaveProfile = () => {
-    toast.success("Perfil atualizado com sucesso");
+    setIsLoading(true);
+    setTimeout(() => {
+      setIsLoading(false);
+      toast.success("Perfil atualizado com sucesso");
+    }, 1000);
   };
 
   const handleChangePassword = (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
     
-    if (formState.newPassword !== formState.confirmPassword) {
-      toast.error("As senhas não coincidem");
-      return;
-    }
-    
-    if (formState.newPassword.length < 6) {
-      toast.error("A senha deve ter pelo menos 6 caracteres");
-      return;
-    }
-    
-    toast.success("Senha alterada com sucesso");
-    setFormState(prev => ({
-      ...prev,
-      currentPassword: "",
-      newPassword: "",
-      confirmPassword: ""
-    }));
+    setTimeout(() => {
+      setIsLoading(false);
+      
+      if (formState.newPassword !== formState.confirmPassword) {
+        toast.error("As senhas não coincidem");
+        return;
+      }
+      
+      if (formState.newPassword.length < 6) {
+        toast.error("A senha deve ter pelo menos 6 caracteres");
+        return;
+      }
+      
+      toast.success("Senha alterada com sucesso");
+      setFormState(prev => ({
+        ...prev,
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: ""
+      }));
+    }, 1000);
   };
 
   return (
@@ -192,9 +202,18 @@ const Settings = () => {
                         onChange={handleInputChange}
                       />
                     </div>
-                    <Button onClick={handleSaveProfile} className="w-full sm:w-auto">
-                      <Save size={16} className="mr-2" />
-                      Salvar Alterações
+                    <Button onClick={handleSaveProfile} className="w-full sm:w-auto" disabled={isLoading}>
+                      {isLoading ? (
+                        <>
+                          <Loader2 size={16} className="mr-2 animate-spin" />
+                          Salvando...
+                        </>
+                      ) : (
+                        <>
+                          <Save size={16} className="mr-2" />
+                          Salvar Alterações
+                        </>
+                      )}
                     </Button>
                   </CardContent>
                 </Card>
@@ -238,8 +257,15 @@ const Settings = () => {
                           onChange={handleInputChange}
                         />
                       </div>
-                      <Button type="submit" className="w-full sm:w-auto">
-                        Alterar Senha
+                      <Button type="submit" className="w-full sm:w-auto" disabled={isLoading}>
+                        {isLoading ? (
+                          <>
+                            <Loader2 size={16} className="mr-2 animate-spin" />
+                            Atualizando...
+                          </>
+                        ) : (
+                          <>Alterar Senha</>
+                        )}
                       </Button>
                     </form>
                     <div className="pt-6 border-t border-gray-200">
@@ -332,7 +358,7 @@ const Settings = () => {
                       </div>
                     </div>
                     
-                    <Button className="w-full sm:w-auto">
+                    <Button className="w-full sm:w-auto" onClick={() => toast.success("Preferências salvas com sucesso")}>
                       Salvar Preferências
                     </Button>
                   </CardContent>
@@ -399,7 +425,7 @@ const Settings = () => {
                       </div>
                     </div>
                     
-                    <Button className="w-full sm:w-auto">
+                    <Button className="w-full sm:w-auto" onClick={() => toast.success("Configurações salvas com sucesso")}>
                       Salvar Configurações
                     </Button>
                   </CardContent>
@@ -419,7 +445,9 @@ const Settings = () => {
                           <h3 className="font-medium">Plano Atual: Gratuito</h3>
                           <p className="text-sm text-gray-500">100 leads, 50 mensagens por mês</p>
                         </div>
-                        <Button variant="outline">Fazer Upgrade</Button>
+                        <Button variant="outline" asChild>
+                          <a href="/pricing">Fazer Upgrade</a>
+                        </Button>
                       </div>
                     </div>
                     
