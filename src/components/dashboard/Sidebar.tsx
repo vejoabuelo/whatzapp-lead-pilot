@@ -18,6 +18,7 @@ import {
   PlusCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/providers/AuthProvider";
 
 interface SidebarItemProps {
   icon: React.ReactNode;
@@ -51,9 +52,18 @@ const SidebarItem = ({ icon, title, path, isCollapsed, isActive, onClick }: Side
 const Sidebar = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const location = useLocation();
+  const { user, profile, signOut } = useAuth();
 
   const toggleSidebar = () => {
     setIsCollapsed(!isCollapsed);
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error("Erro ao fazer logout:", error);
+    }
   };
 
   const menuItems = [
@@ -181,19 +191,28 @@ const Sidebar = () => {
         {!isCollapsed ? (
           <div className="flex items-center justify-between">
             <div className="flex items-center">
-              <div className="h-8 w-8 bg-gray-200 rounded-full mr-2"></div>
+              <div className="h-8 w-8 bg-gray-200 rounded-full mr-2 flex items-center justify-center text-xs font-semibold uppercase">
+                {user?.email?.charAt(0) || '?'}
+              </div>
               <div>
-                <p className="text-sm font-medium">João Silva</p>
-                <p className="text-xs text-gray-500">joao@empresa.com</p>
+                <p className="text-sm font-medium">{profile?.full_name || user?.email?.split('@')[0] || 'Usuário'}</p>
+                <p className="text-xs text-gray-500">{user?.email || ''}</p>
               </div>
             </div>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-8 w-8"
+              onClick={handleSignOut}
+            >
               <LogOut size={18} />
             </Button>
           </div>
         ) : (
           <div className="flex justify-center">
-            <div className="h-8 w-8 bg-gray-200 rounded-full"></div>
+            <div className="h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center text-xs font-semibold uppercase">
+              {user?.email?.charAt(0) || '?'}
+            </div>
           </div>
         )}
       </div>
