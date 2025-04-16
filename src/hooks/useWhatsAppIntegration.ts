@@ -24,7 +24,7 @@ export function useWhatsAppIntegration() {
           setIsConnecting(false);
           await updateConnection(connectionId, { 
             status: 'connected',
-            sessionId: status.instanceId 
+            connected_at: new Date().toISOString() // Using connected_at which should exist in the type
           });
           toast.success('WhatsApp conectado com sucesso!');
         }
