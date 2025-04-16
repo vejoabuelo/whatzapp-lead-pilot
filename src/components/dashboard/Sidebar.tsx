@@ -77,7 +77,9 @@ const Sidebar = () => {
   ];
 
   const adminMenuItems = profile?.is_admin ? [
-    { icon: <ShieldCheck size={20} />, title: "Admin WhatsApp", path: "/admin/whatsapp" },
+    { icon: <ShieldCheck size={20} />, title: "Painel Admin", path: "/admin" },
+    { icon: <MessageSquare size={20} />, title: "Admin WhatsApp", path: "/admin/whatsapp" },
+    { icon: <Users size={20} />, title: "Usuários", path: "/admin/users" },
   ] : [];
 
   return (
@@ -144,7 +146,7 @@ const Sidebar = () => {
                 title={item.title}
                 path={item.path}
                 isCollapsed={isCollapsed}
-                isActive={location.pathname === item.path}
+                isActive={location.pathname === item.path || location.pathname.startsWith(`${item.path}/`)}
               />
             ))}
           </div>

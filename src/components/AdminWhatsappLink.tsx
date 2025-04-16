@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MessageSquare } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
 import { useAuth } from '@/providers/AuthProvider';
 
 const AdminWhatsappLink = () => {
@@ -15,11 +15,11 @@ const AdminWhatsappLink = () => {
   return (
     <li>
       <button
-        onClick={() => navigate('/admin/whatsapp')}
+        onClick={() => navigate('/admin')}
         className="flex items-center w-full p-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
       >
-        <MessageSquare className="h-5 w-5 mr-3 text-blue-600" />
-        <span>Admin WhatsApp</span>
+        <ShieldCheck className="h-5 w-5 mr-3 text-blue-600" />
+        <span>Painel Admin</span>
       </button>
     </li>
   );
