@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+
+import React from 'react';
 import { Routes, Route, BrowserRouter, Navigate } from 'react-router-dom';
-import { ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { Toaster } from "@/components/ui/sonner";
 import Index from '@/pages/Index';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
@@ -31,7 +31,7 @@ function App() {
 
   return (
     <div className="App">
-      <ToastContainer position="top-right" autoClose={5000} hideProgressBar={false} newestOnTop closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
+      <Toaster />
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/login" element={<Login />} />

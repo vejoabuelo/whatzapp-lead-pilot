@@ -1,9 +1,9 @@
-
 export interface Profile {
   id: string;
   full_name: string | null;
   business_type: string | null;
   business_size: string | null;
+  is_admin: boolean | null;
   created_at: string;
   updated_at: string;
 }
