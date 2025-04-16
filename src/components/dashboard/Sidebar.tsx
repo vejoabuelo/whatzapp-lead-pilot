@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -15,7 +14,8 @@ import {
   LogOut,
   Users,
   Gauge,
-  PlusCircle
+  PlusCircle,
+  ShieldCheck
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/providers/AuthProvider";
@@ -76,6 +76,10 @@ const Sidebar = () => {
     { icon: <Settings size={20} />, title: "Configurações", path: "/settings" },
   ];
 
+  const adminMenuItems = profile?.is_admin ? [
+    { icon: <ShieldCheck size={20} />, title: "Admin WhatsApp", path: "/admin/whatsapp" },
+  ] : [];
+
   return (
     <div 
       className={cn(
@@ -130,6 +134,22 @@ const Sidebar = () => {
           ))}
         </div>
 
+        {profile?.is_admin && adminMenuItems.length > 0 && (
+          <div className="mb-6">
+            {!isCollapsed && <p className="px-3 text-xs font-semibold text-gray-400 uppercase mb-2">Administração</p>}
+            {adminMenuItems.map((item, index) => (
+              <SidebarItem
+                key={`admin-${index}`}
+                icon={item.icon}
+                title={item.title}
+                path={item.path}
+                isCollapsed={isCollapsed}
+                isActive={location.pathname === item.path}
+              />
+            ))}
+          </div>
+        )}
+
         {!isCollapsed && (
           <div className="mb-6">
             <p className="px-3 text-xs font-semibold text-gray-400 uppercase mb-2">Seu Plano</p>
@@ -164,8 +184,8 @@ const Sidebar = () => {
 
         {isCollapsed && (
           <div className="mb-6 flex justify-center">
-            <div className="h-8 w-8 bg-gray-100 rounded-full flex items-center justify-center">
-              <Gauge size={16} className="text-gray-500" />
+            <div className="h-8 w-8 bg-gray-100 rounded-full flex items-center justify-center text-xs font-semibold uppercase">
+              {user?.email?.charAt(0) || '?'}
             </div>
           </div>
         )}
