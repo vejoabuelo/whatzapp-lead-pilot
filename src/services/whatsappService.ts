@@ -1,4 +1,6 @@
 
+import { supabase } from '@/integrations/supabase/client';
+
 interface WhatsAppMessage {
   phone: string;
   message: string;
