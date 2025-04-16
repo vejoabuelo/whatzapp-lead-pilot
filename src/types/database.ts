@@ -1,3 +1,4 @@
+
 export interface Profile {
   id: string;
   full_name: string | null;
@@ -123,6 +124,17 @@ export interface LeadTag {
   user_id: string;
   lead_id: string;
   tag: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WhatsappInstance {
+  id: string;
+  name: string;
+  instance_id: string;
+  api_key: string;
+  is_available: boolean;
+  current_user_id: string | null;
   created_at: string;
   updated_at: string;
 }

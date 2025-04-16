@@ -17,14 +17,38 @@ async function getInstanceCredentials() {
     throw new Error('Usuário não autenticado');
   }
   
-  const { data: instance } = await supabase
+  // Get the allocated instance for the current user
+  const { data: instance, error } = await supabase
     .from('whatsapp_instances')
     .select('instance_id, api_key')
     .eq('current_user_id', session.user.id)
     .single();
   
-  if (!instance) {
-    throw new Error('Nenhuma instância do WhatsApp disponível');
+  if (error || !instance) {
+    console.error('Erro ao buscar instância:', error);
+    
+    // Try to allocate an instance for the user
+    const { data: allocatedInstanceId } = await supabase.rpc(
+      'allocate_whatsapp_instance',
+      { user_id: session.user.id }
+    );
+    
+    if (!allocatedInstanceId) {
+      throw new Error('Nenhuma instância do WhatsApp disponível');
+    }
+    
+    // Fetch the newly allocated instance
+    const { data: newInstance, error: newError } = await supabase
+      .from('whatsapp_instances')
+      .select('instance_id, api_key')
+      .eq('id', allocatedInstanceId)
+      .single();
+      
+    if (newError || !newInstance) {
+      throw new Error('Falha ao recuperar dados da instância');
+    }
+    
+    return newInstance;
   }
 
   return instance;

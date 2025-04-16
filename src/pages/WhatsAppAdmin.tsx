@@ -29,8 +29,8 @@ const WhatsAppAdmin = () => {
   const [editInstanceDialog, setEditInstanceDialog] = useState(false);
   const [selectedInstance, setSelectedInstance] = useState<any>(null);
 
-  // Redirecionar se não for admin
-  if (profile && !profile.is_admin) {
+  // Verificação de admin e redirecionamento
+  if (profile && profile.is_admin === false) {
     navigate("/dashboard");
     return null;
   }

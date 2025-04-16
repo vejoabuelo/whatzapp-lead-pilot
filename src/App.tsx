@@ -16,8 +16,8 @@ import Reports from '@/pages/Reports';
 import Team from '@/pages/Team';
 import Settings from '@/pages/Settings';
 import NotFound from '@/pages/NotFound';
-import { useAuth } from '@/providers/AuthProvider';
 import WhatsAppAdmin from '@/pages/WhatsAppAdmin';
+import AdminDashboard from '@/pages/AdminDashboard';
 import PrivateRoute from '@/components/PrivateRoute';
 
 function App() {
@@ -78,6 +78,11 @@ function App() {
         } />
         
         {/* Admin Routes */}
+        <Route path="/admin" element={
+          <PrivateRoute>
+            <AdminDashboard />
+          </PrivateRoute>
+        } />
         <Route path="/admin/whatsapp" element={
           <PrivateRoute>
             <WhatsAppAdmin />

@@ -38,6 +38,7 @@ export function useWhatsappInstances() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
+      console.log("Instâncias obtidas:", data);
       setInstances(data || []);
     } catch (error) {
       console.error('Error fetching WhatsApp instances:', error);
@@ -82,6 +83,7 @@ export function useWhatsappInstances() {
       setInstances(prev => 
         prev.map(inst => inst.id === id ? data[0] : inst)
       );
+      toast.success('Instância atualizada com sucesso');
       return data[0];
     } catch (error) {
       console.error('Error updating WhatsApp instance:', error);
