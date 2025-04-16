@@ -1,17 +1,25 @@
-
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import { getQRCode, checkConnectionStatus, sendWhatsAppMessage } from '@/services/whatsappService';
 import { useWhatsappConnections } from './useWhatsappConnections';
+import { useWhatsappInstances } from './useWhatsappInstances';
+import { useAuth } from '@/providers/AuthProvider';
 
 export function useWhatsAppIntegration() {
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
   const { updateConnection } = useWhatsappConnections();
+  const { allocateInstance } = useWhatsappInstances();
+  const { user } = useAuth();
 
   const startConnection = useCallback(async (connectionId: string) => {
+    if (!user) return;
+    
     setIsConnecting(true);
     try {
+      // Primeiro, aloca uma instância disponível para o usuário
+      await allocateInstance(user.id);
+      
       const { qrCode: newQrCode, instanceId } = await getQRCode();
       setQrCode(newQrCode);
       
@@ -24,7 +32,7 @@ export function useWhatsAppIntegration() {
           setIsConnecting(false);
           await updateConnection(connectionId, { 
             status: 'connected',
-            connected_at: new Date().toISOString() // Using connected_at which should exist in the type
+            connected_at: new Date().toISOString()
           });
           toast.success('WhatsApp conectado com sucesso!');
         }
@@ -45,7 +53,7 @@ export function useWhatsAppIntegration() {
       toast.error('Erro ao iniciar conexão com WhatsApp');
       setIsConnecting(false);
     }
-  }, [updateConnection]);
+  }, [updateConnection, allocateInstance, user]);
 
   const sendMessage = useCallback(async (phone: string, message: string) => {
     try {

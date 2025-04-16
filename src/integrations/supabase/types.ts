@@ -330,6 +330,7 @@ export type Database = {
           created_at: string
           full_name: string | null
           id: string
+          is_admin: boolean | null
           updated_at: string
         }
         Insert: {
@@ -338,6 +339,7 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id: string
+          is_admin?: boolean | null
           updated_at?: string
         }
         Update: {
@@ -346,6 +348,7 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id?: string
+          is_admin?: boolean | null
           updated_at?: string
         }
         Relationships: []
@@ -454,12 +457,48 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_instances: {
+        Row: {
+          api_key: string
+          created_at: string
+          current_user_id: string | null
+          id: string
+          instance_id: string
+          is_available: boolean | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          api_key: string
+          created_at?: string
+          current_user_id?: string | null
+          id?: string
+          instance_id: string
+          is_available?: boolean | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          api_key?: string
+          created_at?: string
+          current_user_id?: string | null
+          id?: string
+          instance_id?: string
+          is_available?: boolean | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      allocate_whatsapp_instance: {
+        Args: { user_id: string }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

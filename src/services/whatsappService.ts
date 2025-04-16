@@ -7,18 +7,34 @@ interface WhatsAppMessage {
 
 export const WHATSAPP_API_URL = "https://api.w-api.app/v1";
 
+async function getInstanceCredentials() {
+  const { data: instance } = await supabase
+    .from('whatsapp_instances')
+    .select('instance_id, api_key')
+    .eq('current_user_id', supabase.auth.user()?.id)
+    .single();
+  
+  if (!instance) {
+    throw new Error('Nenhuma instância do WhatsApp disponível');
+  }
+
+  return instance;
+}
+
 export async function sendWhatsAppMessage({ phone, message }: WhatsAppMessage) {
   try {
-    const response = await fetch(`${WHATSAPP_API_URL}/message/send-text?instanceId=${import.meta.env.VITE_WHATSAPP_INSTANCE_ID}`, {
+    const instance = await getInstanceCredentials();
+
+    const response = await fetch(`${WHATSAPP_API_URL}/message/send-text?instanceId=${instance.instance_id}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${import.meta.env.VITE_WHATSAPP_API_KEY}`
+        'Authorization': `Bearer ${instance.api_key}`
       },
       body: JSON.stringify({
         phone,
         message,
-        delayMessage: 5 // 5 segundos de delay entre mensagens
+        delayMessage: 5
       })
     });
 
@@ -35,10 +51,12 @@ export async function sendWhatsAppMessage({ phone, message }: WhatsAppMessage) {
 
 export async function getQRCode() {
   try {
-    const response = await fetch(`${WHATSAPP_API_URL}/instance/qr-code?instanceId=${import.meta.env.VITE_WHATSAPP_INSTANCE_ID}&image=enable`, {
+    const instance = await getInstanceCredentials();
+
+    const response = await fetch(`${WHATSAPP_API_URL}/instance/qr-code?instanceId=${instance.instance_id}&image=enable`, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${import.meta.env.VITE_WHATSAPP_API_KEY}`
+        'Authorization': `Bearer ${instance.api_key}`
       }
     });
 
@@ -49,7 +67,7 @@ export async function getQRCode() {
     const data = await response.json();
     return {
       qrCode: data.qrcode,
-      instanceId: data.instanceId 
+      instanceId: data.instanceId
     };
   } catch (error) {
     console.error('Error getting QR code:', error);
@@ -59,9 +77,11 @@ export async function getQRCode() {
 
 export async function checkConnectionStatus() {
   try {
-    const response = await fetch(`${WHATSAPP_API_URL}/instance/status-instance?instanceId=${import.meta.env.VITE_WHATSAPP_INSTANCE_ID}`, {
+    const instance = await getInstanceCredentials();
+
+    const response = await fetch(`${WHATSAPP_API_URL}/instance/status-instance?instanceId=${instance.instance_id}`, {
       headers: {
-        'Authorization': `Bearer ${import.meta.env.VITE_WHATSAPP_API_KEY}`
+        'Authorization': `Bearer ${instance.api_key}`
       }
     });
 
