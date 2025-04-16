@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Routes, Route, BrowserRouter, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from "@/components/ui/sonner";
 import Index from '@/pages/Index';
 import Login from '@/pages/Login';
@@ -18,17 +18,9 @@ import Settings from '@/pages/Settings';
 import NotFound from '@/pages/NotFound';
 import { useAuth } from '@/providers/AuthProvider';
 import WhatsAppAdmin from '@/pages/WhatsAppAdmin';
+import PrivateRoute from '@/components/PrivateRoute';
 
 function App() {
-  const { user, isLoading } = useAuth();
-
-  const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
-    if (isLoading) {
-      return <div>Carregando...</div>; // Pode ser substituído por um spinner
-    }
-    return user ? <>{children}</> : <Navigate to="/login" />;
-  };
-
   return (
     <div className="App">
       <Toaster />
