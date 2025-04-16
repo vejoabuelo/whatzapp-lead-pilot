@@ -10,10 +10,17 @@ interface WhatsAppMessage {
 export const WHATSAPP_API_URL = "https://api.w-api.app/v1";
 
 async function getInstanceCredentials() {
+  // Get current user session first
+  const { data: { session } } = await supabase.auth.getSession();
+  
+  if (!session) {
+    throw new Error('Usuário não autenticado');
+  }
+  
   const { data: instance } = await supabase
     .from('whatsapp_instances')
     .select('instance_id, api_key')
-    .eq('current_user_id', supabase.auth.user()?.id)
+    .eq('current_user_id', session.user.id)
     .single();
   
   if (!instance) {
