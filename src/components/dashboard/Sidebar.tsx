@@ -15,7 +15,11 @@ import {
   Users,
   Gauge,
   PlusCircle,
-  ShieldCheck
+  ShieldCheck,
+  Database,
+  Crown,
+  Server,
+  Activity
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/providers/AuthProvider";
@@ -67,19 +71,61 @@ const Sidebar = () => {
   };
 
   const menuItems = [
-    { icon: <Home size={20} />, title: "Dashboard", path: "/dashboard" },
-    { icon: <Search size={20} />, title: "Prospecção", path: "/prospection" },
-    { icon: <MessageSquare size={20} />, title: "Mensagens", path: "/messages" },
-    { icon: <Send size={20} />, title: "Campanhas", path: "/campaigns" },
-    { icon: <BarChart3 size={20} />, title: "Relatórios", path: "/reports" },
-    { icon: <Users size={20} />, title: "Equipe", path: "/team" },
-    { icon: <Settings size={20} />, title: "Configurações", path: "/settings" },
+    { 
+      icon: <Home size={20} />, 
+      title: "Dashboard", 
+      path: "/dashboard" 
+    },
+    { 
+      icon: <Search size={20} />, 
+      title: "Prospecção", 
+      path: "/prospection" 
+    },
+    { 
+      icon: <MessageSquare size={20} />, 
+      title: "Conexões WhatsApp", 
+      path: "/whatsapp-connections" 
+    },
+    { 
+      icon: <MessageSquare size={20} />, 
+      title: "Biblioteca de Mensagens", 
+      path: "/messages/library" 
+    },
+    { 
+      icon: <Send size={20} />, 
+      title: "Campanhas", 
+      path: "/campaigns" 
+    },
+    { 
+      icon: <BarChart3 size={20} />, 
+      title: "Relatórios", 
+      path: "/reports" 
+    },
+    { 
+      icon: <Users size={20} />, 
+      title: "Equipe", 
+      path: "/team" 
+    },
+    { 
+      icon: <Settings size={20} />, 
+      title: "Configurações", 
+      path: "/settings" 
+    }
   ];
 
   const adminMenuItems = profile?.is_admin ? [
     { icon: <ShieldCheck size={20} />, title: "Painel Admin", path: "/admin" },
     { icon: <MessageSquare size={20} />, title: "Admin WhatsApp", path: "/admin/whatsapp" },
     { icon: <Users size={20} />, title: "Usuários", path: "/admin/users" },
+    { icon: <Database size={20} />, title: "Banco de Dados", path: "/admin/database" },
+    { icon: <Settings size={20} />, title: "Config. Sistema", path: "/admin/settings" }
+  ] : [];
+
+  const superAdminMenuItems = profile?.is_superadmin ? [
+    { icon: <Crown size={20} />, title: "Super Admin", path: "/superadmin" },
+    { icon: <Server size={20} />, title: "Instâncias", path: "/superadmin/instances" },
+    { icon: <Users size={20} />, title: "Todos Usuários", path: "/superadmin/users" },
+    { icon: <Activity size={20} />, title: "Monitoramento", path: "/superadmin/monitoring" }
   ] : [];
 
   return (
@@ -135,6 +181,22 @@ const Sidebar = () => {
             />
           ))}
         </div>
+
+        {profile?.is_superadmin && superAdminMenuItems.length > 0 && (
+          <div className="mb-6">
+            {!isCollapsed && <p className="px-3 text-xs font-semibold text-red-400 uppercase mb-2">Super Admin</p>}
+            {superAdminMenuItems.map((item, index) => (
+              <SidebarItem
+                key={`superadmin-${index}`}
+                icon={item.icon}
+                title={item.title}
+                path={item.path}
+                isCollapsed={isCollapsed}
+                isActive={location.pathname === item.path || location.pathname.startsWith(`${item.path}/`)}
+              />
+            ))}
+          </div>
+        )}
 
         {profile?.is_admin && adminMenuItems.length > 0 && (
           <div className="mb-6">
@@ -211,20 +273,20 @@ const Sidebar = () => {
 
       <div className="p-4 border-t border-gray-200">
         {!isCollapsed ? (
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <div className="h-8 w-8 bg-gray-200 rounded-full mr-2 flex items-center justify-center text-xs font-semibold uppercase">
+          <div className="flex items-center justify-between user-menu">
+            <div className="flex items-center overflow-hidden">
+              <div className="h-8 w-8 bg-gray-200 rounded-full mr-2 flex items-center justify-center text-xs font-semibold uppercase flex-shrink-0">
                 {user?.email?.charAt(0) || '?'}
               </div>
-              <div>
-                <p className="text-sm font-medium">{profile?.full_name || user?.email?.split('@')[0] || 'Usuário'}</p>
-                <p className="text-xs text-gray-500">{user?.email || ''}</p>
+              <div className="min-w-0">
+                <p className="text-sm font-medium truncate">{profile?.full_name || user?.email?.split('@')[0] || 'Usuário'}</p>
+                <p className="text-xs text-gray-500 email-container">{user?.email || ''}</p>
               </div>
             </div>
             <Button 
               variant="ghost" 
               size="icon" 
-              className="h-8 w-8"
+              className="h-8 w-8 logout-button"
               onClick={handleSignOut}
             >
               <LogOut size={18} />

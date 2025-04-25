@@ -1,13 +1,8 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
+import { QRCodeScannerProps } from '@/types/whatsapp';
 
-interface QRCodeScannerProps {
-  qrCode: string | null;
-  isConnecting: boolean;
-}
-
-export function QRCodeScanner({ qrCode, isConnecting }: QRCodeScannerProps) {
+export function QRCodeScanner({ qrCode, isConnecting = false }: QRCodeScannerProps) {
   if (!qrCode && !isConnecting) return null;
 
   return (
@@ -26,11 +21,18 @@ export function QRCodeScanner({ qrCode, isConnecting }: QRCodeScannerProps) {
           </div>
         ) : qrCode ? (
           <div className="flex flex-col items-center gap-4">
-            <img
-              src={`data:image/png;base64,${qrCode}`}
-              alt="WhatsApp QR Code"
-              className="w-64 h-64"
-            />
+            <div className="relative">
+              <img
+                src={`data:image/png;base64,${qrCode}`}
+                alt="WhatsApp QR Code"
+                className={`w-64 h-64 ${isConnecting ? 'opacity-50' : ''}`}
+              />
+              {isConnecting && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+                </div>
+              )}
+            </div>
             <p className="text-sm text-gray-500">
               Abra o WhatsApp no seu celular e escaneie o código QR
             </p>

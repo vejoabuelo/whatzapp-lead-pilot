@@ -1,27 +1,65 @@
-
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { EyeIcon, EyeOffIcon, Loader2 } from "lucide-react";
+import { EyeIcon, EyeOffIcon, Loader2, AlertCircle, CheckCircle } from "lucide-react";
 import { useAuth } from "@/providers/AuthProvider";
 import { toast } from "sonner";
+import { validateEmail, normalizeEmail, getEmailSuggestion, SUGGESTED_DOMAINS } from "@/utils/emailValidation";
 
 const Register = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [emailError, setEmailError] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirmation, setPasswordConfirmation] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
+  const [emailFocused, setEmailFocused] = useState(false);
   
   const { signUp } = useAuth();
 
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newEmail = e.target.value;
+    setEmail(newEmail);
+    
+    // Don't show validation errors immediately for empty fields
+    if (newEmail) {
+      const validation = validateEmail(newEmail);
+      setEmailError(validation.message);
+    } else {
+      setEmailError("");
+    }
+  };
+
+  const handleEmailBlur = () => {
+    setEmailFocused(false);
+    if (email) {
+      const validation = validateEmail(email);
+      setEmailError(validation.message);
+    }
+  };
+
+  // Check if email domain is one of the suggested domains
+  const isValidDomain = () => {
+    if (!email || !email.includes('@')) return false;
+    const domain = email.split('@')[1].toLowerCase();
+    return SUGGESTED_DOMAINS.includes(domain);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    const emailValidation = validateEmail(email);
+    if (!emailValidation.valid) {
+      toast.error("E-mail inválido", {
+        description: emailValidation.message
+      });
+      return;
+    }
     
     if (password !== passwordConfirmation) {
       toast.error("Senhas não correspondem", {
@@ -40,7 +78,8 @@ const Register = () => {
     setIsLoading(true);
 
     try {
-      await signUp(email, password, name);
+      const trimmedEmail = normalizeEmail(email);
+      await signUp(trimmedEmail, password, name);
     } catch (error) {
       console.error("Registration error:", error);
     } finally {
@@ -85,15 +124,35 @@ const Register = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">E-mail</Label>
-              <Input 
-                id="email"
-                type="email" 
-                placeholder="seu@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
+              <Label htmlFor="email" className={emailError ? "text-red-500" : ""}>E-mail</Label>
+              <div className="relative">
+                <Input 
+                  id="email"
+                  type="email" 
+                  placeholder="seu@email.com"
+                  value={email}
+                  onChange={handleEmailChange}
+                  onFocus={() => setEmailFocused(true)}
+                  onBlur={handleEmailBlur}
+                  required
+                  className={emailError ? "border-red-300 pr-10 focus-visible:ring-red-500" : (isValidDomain() ? "border-green-300 pr-10 focus-visible:ring-green-500" : "")}
+                />
+                {emailError && (
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <AlertCircle className="h-5 w-5 text-red-500" />
+                  </div>
+                )}
+                {!emailError && isValidDomain() && (
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <CheckCircle className="h-5 w-5 text-green-500" />
+                  </div>
+                )}
+              </div>
+              {emailError ? (
+                <p className="text-xs text-red-500 mt-1">{emailError}</p>
+              ) : (
+                <p className="text-xs text-gray-500">{getEmailSuggestion()}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Senha</Label>
@@ -150,7 +209,7 @@ const Register = () => {
             <Button 
               type="submit" 
               className="w-full" 
-              disabled={isLoading}
+              disabled={isLoading || !!emailError}
             >
               {isLoading ? (
                 <>

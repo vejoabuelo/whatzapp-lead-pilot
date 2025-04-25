@@ -1,11 +1,15 @@
-
-import { Navigate, useLocation } from 'react-router-dom';
+import { ReactNode } from 'react';
+import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/providers/AuthProvider';
 import { Loader2 } from 'lucide-react';
 
-export default function PrivateRoute({ children }: { children: React.ReactNode }) {
-  const { user, isLoading } = useAuth();
-  const location = useLocation();
+interface PrivateRouteProps {
+  children: ReactNode;
+  requireSuperAdmin?: boolean;
+}
+
+const PrivateRoute = ({ children, requireSuperAdmin = false }: PrivateRouteProps) => {
+  const { user, isLoading, profile } = useAuth();
 
   if (isLoading) {
     return (
@@ -17,8 +21,14 @@ export default function PrivateRoute({ children }: { children: React.ReactNode }
   }
 
   if (!user) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return <Navigate to="/login" />;
   }
 
-  return children;
-}
+  if (requireSuperAdmin && !profile?.is_superadmin) {
+    return <Navigate to="/dashboard" />;
+  }
+
+  return <>{children}</>;
+};
+
+export default PrivateRoute;

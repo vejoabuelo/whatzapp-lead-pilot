@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useWhatsappInstances } from "@/hooks/useWhatsappInstances";
@@ -12,13 +11,15 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { ArrowLeft, Plus, RefreshCcw, Trash2, Edit, AlertCircle, Check, X, User, Key } from "lucide-react";
+import { ArrowLeft, Plus, RefreshCcw, Trash2, Edit, AlertCircle, Check, X, User, Key, Users, LogOut } from "lucide-react";
 import { toast } from "sonner";
 
 const instanceSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
   instance_id: z.string().min(1, "ID da instância é obrigatório"),
-  api_key: z.string().min(1, "API Key é obrigatória")
+  api_key: z.string().min(1, "API Key é obrigatória"),
+  host: z.string().min(1, "Host é obrigatório"),
+  max_free_users: z.number().min(1, "Número de usuários gratuitos é obrigatório")
 });
 
 const WhatsAppAdmin = () => {
@@ -40,7 +41,9 @@ const WhatsAppAdmin = () => {
     defaultValues: {
       name: "",
       instance_id: "",
-      api_key: ""
+      api_key: "",
+      host: "api.w-api.app",
+      max_free_users: 5
     }
   });
 
@@ -49,12 +52,20 @@ const WhatsAppAdmin = () => {
     defaultValues: {
       name: "",
       instance_id: "",
-      api_key: ""
+      api_key: "",
+      host: "api.w-api.app",
+      max_free_users: 5
     }
   });
 
   const handleAddInstance = async (values: z.infer<typeof instanceSchema>) => {
-    const result = await addInstance(values.name, values.instance_id, values.api_key);
+    const result = await addInstance(
+      values.name, 
+      values.instance_id, 
+      values.api_key,
+      values.max_free_users,
+      values.host
+    );
     if (result) {
       setNewInstanceDialog(false);
       newInstanceForm.reset();
@@ -76,12 +87,20 @@ const WhatsAppAdmin = () => {
     editInstanceForm.setValue("name", instance.name);
     editInstanceForm.setValue("instance_id", instance.instance_id);
     editInstanceForm.setValue("api_key", instance.api_key);
+    editInstanceForm.setValue("host", instance.host);
+    editInstanceForm.setValue("max_free_users", instance.max_free_users);
     setEditInstanceDialog(true);
   };
 
   const confirmDelete = async (id: string) => {
     if (window.confirm("Tem certeza que deseja excluir esta instância?")) {
       await deleteInstance(id);
+    }
+  };
+
+  const disconnectUser = async (userId: string) => {
+    if (window.confirm("Tem certeza que deseja desconectar este usuário?")) {
+      await deleteInstance(userId);
     }
   };
 
@@ -159,6 +178,32 @@ const WhatsAppAdmin = () => {
                           </FormItem>
                         )}
                       />
+                      <FormField
+                        control={newInstanceForm.control}
+                        name="host"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Host</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Ex: api.w-api.app" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={newInstanceForm.control}
+                        name="max_free_users"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Número de Usuários Gratuitos</FormLabel>
+                            <FormControl>
+                              <Input type="number" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                       <DialogFooter>
                         <Button variant="outline" type="button" onClick={() => setNewInstanceDialog(false)}>Cancelar</Button>
                         <Button type="submit">Adicionar</Button>
@@ -199,6 +244,7 @@ const WhatsAppAdmin = () => {
                           <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-3 px-4">Nome</th>
                           <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-3 px-4">ID da Instância</th>
                           <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-3 px-4">Disponível</th>
+                          <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-3 px-4">Usuários Gratuitos</th>
                           <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-3 px-4">Usuário Atual</th>
                           <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-3 px-4">Ações</th>
                         </tr>
@@ -229,6 +275,12 @@ const WhatsAppAdmin = () => {
                               </span>
                             </td>
                             <td className="py-3 px-4">
+                              <div className="flex items-center">
+                                <Users size={16} className="text-gray-400 mr-2" />
+                                <span>{instance.current_free_users} / {instance.max_free_users}</span>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4">
                               {instance.current_user_id ? (
                                 <div className="flex items-center">
                                   <User size={16} className="text-gray-400 mr-2" />
@@ -246,6 +298,16 @@ const WhatsAppAdmin = () => {
                                 <Button variant="ghost" size="icon" className="text-red-500" onClick={() => confirmDelete(instance.id)}>
                                   <Trash2 size={16} />
                                 </Button>
+                                {instance.current_user_id && (
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="text-orange-500"
+                                    onClick={() => disconnectUser(instance.current_user_id)}
+                                  >
+                                    <LogOut size={16} />
+                                  </Button>
+                                )}
                               </div>
                             </td>
                           </tr>
@@ -300,6 +362,32 @@ const WhatsAppAdmin = () => {
                             <FormLabel>API Key</FormLabel>
                             <FormControl>
                               <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={editInstanceForm.control}
+                        name="host"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Host</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={editInstanceForm.control}
+                        name="max_free_users"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Número de Usuários Gratuitos</FormLabel>
+                            <FormControl>
+                              <Input type="number" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>

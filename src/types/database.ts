@@ -1,10 +1,12 @@
-
 export interface Profile {
   id: string;
+  user_id: string;
   full_name: string | null;
   business_type: string | null;
   business_size: string | null;
-  is_admin: boolean | null;
+  is_admin: boolean;
+  is_superadmin: boolean;
+  whatsapp_connections_limit?: number;
   created_at: string;
   updated_at: string;
 }
@@ -45,16 +47,10 @@ export interface UserPlan {
 
 export interface Lead {
   id: string;
-  cnpj: string;
-  company_name: string;
-  phone_number: string;
-  city: string | null;
-  state: string | null;
-  cnae: string | null;
-  cnae_description: string | null;
-  capital_social: number | null;
-  opening_date: string | null;
-  has_whatsapp: boolean | null;
+  user_id: string;
+  name: string;
+  phone: string;
+  status: string;
   created_at: string;
   updated_at: string;
 }
@@ -63,13 +59,7 @@ export interface Campaign {
   id: string;
   user_id: string;
   name: string;
-  category_id: string | null;
-  status: string;
-  min_delay: number;
-  max_delay: number;
-  scheduled_for: string | null;
-  started_at: string | null;
-  completed_at: string | null;
+  status: 'draft' | 'active' | 'paused' | 'completed';
   created_at: string;
   updated_at: string;
 }
@@ -113,6 +103,8 @@ export interface WhatsappConnection {
   user_id: string;
   name: string;
   status: string;
+  instance_id: string | null;
+  api_key: string | null;
   connected_at: string | null;
   last_used_at: string | null;
   created_at: string;
@@ -133,8 +125,11 @@ export interface WhatsappInstance {
   name: string;
   instance_id: string;
   api_key: string;
+  host: string;
   is_available: boolean;
   current_user_id: string | null;
+  max_free_users: number;
+  current_free_users: number;
   created_at: string;
   updated_at: string;
 }

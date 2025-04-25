@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,7 +30,7 @@ import { Lead, Campaign } from "@/types/database";
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { userPlan, isLoading: isPlanLoading } = useUserPlan();
   const { 
     data: leads,
@@ -181,6 +180,9 @@ const Dashboard = () => {
         return "bg-gray-100 text-gray-700";
     }
   };
+
+  // Adicione isso temporariamente para debug
+  console.log('Profile:', profile);
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -661,6 +663,16 @@ const Dashboard = () => {
             </Card>
           </div>
         </main>
+      </div>
+
+      {/* Debug info - remova depois */}
+      <div style={{ position: 'fixed', bottom: 10, right: 10, background: '#f0f0f0', padding: 10, borderRadius: 5, zIndex: 9999 }}>
+        <pre>
+          {JSON.stringify({ 
+            is_admin: profile?.is_admin,
+            is_superadmin: profile?.is_superadmin
+          }, null, 2)}
+        </pre>
       </div>
     </div>
   );

@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -131,5 +130,40 @@
   
   .sticky-header {
     @apply sticky top-0 z-10 bg-background/80 backdrop-blur-md;
+  }
+}
+
+/* Correção para o botão de sair que fica inacessível quando o email é grande */
+.email-container {
+  max-width: 150px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: inline-block;
+}
+
+.logout-button {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin-left: 4px !important;
+  min-width: 30px;
+  min-height: 30px;
+  z-index: 100;
+  position: relative;
+  flex-shrink: 0 !important;
+}
+
+.user-menu {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  width: 100% !important;
+  justify-content: space-between !important;
+}
+
+@media screen and (max-width: 768px) {
+  .email-container {
+    max-width: 100px;
   }
 }

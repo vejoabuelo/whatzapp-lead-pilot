@@ -6,57 +6,57 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export type Database = {
+export interface Database {
   public: {
     Tables: {
       campaign_leads: {
         Row: {
-          campaign_id: string
-          created_at: string
-          error_message: string | null
-          has_response: boolean | null
           id: string
+          campaign_id: string
           lead_id: string
           message_template_id: string | null
-          response_at: string | null
-          sent_at: string | null
-          sent_message: string | null
           status: string
-          updated_at: string
-          user_notes: string | null
+          sent_message: string | null
+          sent_at: string | null
           whatsapp_connection_id: string | null
+          error_message: string | null
+          has_response: boolean | null
+          response_at: string | null
+          user_notes: string | null
+          created_at: string
+          updated_at: string
         }
         Insert: {
-          campaign_id: string
-          created_at?: string
-          error_message?: string | null
-          has_response?: boolean | null
           id?: string
+          campaign_id: string
           lead_id: string
           message_template_id?: string | null
-          response_at?: string | null
-          sent_at?: string | null
+          status: string
           sent_message?: string | null
-          status?: string
-          updated_at?: string
-          user_notes?: string | null
+          sent_at?: string | null
           whatsapp_connection_id?: string | null
-        }
-        Update: {
-          campaign_id?: string
-          created_at?: string
           error_message?: string | null
           has_response?: boolean | null
+          response_at?: string | null
+          user_notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
           id?: string
+          campaign_id?: string
           lead_id?: string
           message_template_id?: string | null
-          response_at?: string | null
-          sent_at?: string | null
-          sent_message?: string | null
           status?: string
-          updated_at?: string
-          user_notes?: string | null
+          sent_message?: string | null
+          sent_at?: string | null
           whatsapp_connection_id?: string | null
+          error_message?: string | null
+          has_response?: boolean | null
+          response_at?: string | null
+          user_notes?: string | null
+          created_at?: string
+          updated_at?: string
         }
         Relationships: [
           {
@@ -86,86 +86,86 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "whatsapp_connections"
             referencedColumns: ["id"]
-          },
+          }
         ]
       }
       campaigns: {
         Row: {
-          category_id: string | null
-          completed_at: string | null
-          created_at: string
           id: string
-          max_delay: number
-          min_delay: number
+          user_id: string
           name: string
+          category_id: string | null
+          status: string
+          min_delay: number
+          max_delay: number
           scheduled_for: string | null
           started_at: string | null
-          status: string
+          completed_at: string | null
+          created_at: string
           updated_at: string
-          user_id: string
         }
         Insert: {
-          category_id?: string | null
-          completed_at?: string | null
-          created_at?: string
           id?: string
-          max_delay?: number
-          min_delay?: number
+          user_id: string
           name: string
+          category_id?: string | null
+          status: string
+          min_delay: number
+          max_delay: number
           scheduled_for?: string | null
           started_at?: string | null
-          status?: string
+          completed_at?: string | null
+          created_at?: string
           updated_at?: string
-          user_id: string
         }
         Update: {
-          category_id?: string | null
-          completed_at?: string | null
-          created_at?: string
           id?: string
-          max_delay?: number
-          min_delay?: number
+          user_id?: string
           name?: string
+          category_id?: string | null
+          status?: string
+          min_delay?: number
+          max_delay?: number
           scheduled_for?: string | null
           started_at?: string | null
-          status?: string
+          completed_at?: string | null
+          created_at?: string
           updated_at?: string
-          user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "campaigns_category_id_fkey"
-            columns: ["category_id"]
+            foreignKeyName: "campaigns_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "message_categories"
+            referencedRelation: "users"
             referencedColumns: ["id"]
-          },
+          }
         ]
       }
       lead_tags: {
         Row: {
-          created_at: string
           id: string
+          user_id: string
           lead_id: string
           tag: string
+          created_at: string
           updated_at: string
-          user_id: string
         }
         Insert: {
-          created_at?: string
           id?: string
+          user_id: string
           lead_id: string
           tag: string
+          created_at?: string
           updated_at?: string
-          user_id: string
         }
         Update: {
-          created_at?: string
           id?: string
+          user_id?: string
           lead_id?: string
           tag?: string
+          created_at?: string
           updated_at?: string
-          user_id?: string
         }
         Relationships: [
           {
@@ -175,103 +175,118 @@ export type Database = {
             referencedRelation: "leads"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "lead_tags_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
         ]
       }
       leads: {
         Row: {
-          capital_social: number | null
-          city: string | null
-          cnae: string | null
-          cnae_description: string | null
+          id: string
           cnpj: string
           company_name: string
-          created_at: string
-          has_whatsapp: boolean | null
-          id: string
-          opening_date: string | null
           phone_number: string
+          city: string | null
           state: string | null
+          cnae: string | null
+          cnae_description: string | null
+          capital_social: number | null
+          opening_date: string | null
+          has_whatsapp: boolean | null
+          created_at: string
           updated_at: string
         }
         Insert: {
-          capital_social?: number | null
-          city?: string | null
-          cnae?: string | null
-          cnae_description?: string | null
+          id?: string
           cnpj: string
           company_name: string
-          created_at?: string
-          has_whatsapp?: boolean | null
-          id?: string
-          opening_date?: string | null
           phone_number: string
+          city?: string | null
           state?: string | null
+          cnae?: string | null
+          cnae_description?: string | null
+          capital_social?: number | null
+          opening_date?: string | null
+          has_whatsapp?: boolean | null
+          created_at?: string
           updated_at?: string
         }
         Update: {
-          capital_social?: number | null
-          city?: string | null
-          cnae?: string | null
-          cnae_description?: string | null
+          id?: string
           cnpj?: string
           company_name?: string
-          created_at?: string
-          has_whatsapp?: boolean | null
-          id?: string
-          opening_date?: string | null
           phone_number?: string
+          city?: string | null
           state?: string | null
+          cnae?: string | null
+          cnae_description?: string | null
+          capital_social?: number | null
+          opening_date?: string | null
+          has_whatsapp?: boolean | null
+          created_at?: string
           updated_at?: string
         }
         Relationships: []
       }
       message_categories: {
         Row: {
-          created_at: string
-          description: string | null
           id: string
-          name: string
-          updated_at: string
           user_id: string
+          name: string
+          description: string | null
+          created_at: string
+          updated_at: string
         }
         Insert: {
-          created_at?: string
-          description?: string | null
           id?: string
-          name: string
-          updated_at?: string
           user_id: string
+          name: string
+          description?: string | null
+          created_at?: string
+          updated_at?: string
         }
         Update: {
-          created_at?: string
-          description?: string | null
           id?: string
-          name?: string
-          updated_at?: string
           user_id?: string
+          name?: string
+          description?: string | null
+          created_at?: string
+          updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "message_categories_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       message_templates: {
         Row: {
+          id: string
           category_id: string
           content: string
           created_at: string
-          id: string
           updated_at: string
         }
         Insert: {
+          id?: string
           category_id: string
           content: string
           created_at?: string
-          id?: string
           updated_at?: string
         }
         Update: {
+          id?: string
           category_id?: string
           content?: string
           created_at?: string
-          id?: string
           updated_at?: string
         }
         Relationships: [
@@ -281,138 +296,157 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "message_categories"
             referencedColumns: ["id"]
-          },
+          }
         ]
       }
       plans: {
         Row: {
-          campaigns_limit: number
-          created_at: string
-          description: string | null
           id: string
+          name: string
+          description: string | null
+          price_monthly: number
           leads_limit: number
           messages_limit: number
-          name: string
-          price_monthly: number
-          updated_at: string
+          campaigns_limit: number
           whatsapp_connections_limit: number
+          created_at: string
+          updated_at: string
         }
         Insert: {
-          campaigns_limit: number
-          created_at?: string
-          description?: string | null
           id?: string
+          name: string
+          description?: string | null
+          price_monthly: number
           leads_limit: number
           messages_limit: number
-          name: string
-          price_monthly: number
+          campaigns_limit: number
+          whatsapp_connections_limit: number
+          created_at?: string
           updated_at?: string
-          whatsapp_connections_limit?: number
         }
         Update: {
-          campaigns_limit?: number
-          created_at?: string
-          description?: string | null
           id?: string
+          name?: string
+          description?: string | null
+          price_monthly?: number
           leads_limit?: number
           messages_limit?: number
-          name?: string
-          price_monthly?: number
-          updated_at?: string
+          campaigns_limit?: number
           whatsapp_connections_limit?: number
+          created_at?: string
+          updated_at?: string
         }
         Relationships: []
       }
       profiles: {
         Row: {
-          business_size: string | null
-          business_type: string | null
-          created_at: string
-          full_name: string | null
           id: string
-          is_admin: boolean | null
+          full_name: string | null
+          business_type: string | null
+          business_size: string | null
+          is_admin: boolean
+          is_superadmin: boolean
+          created_at: string
           updated_at: string
         }
         Insert: {
-          business_size?: string | null
-          business_type?: string | null
-          created_at?: string
-          full_name?: string | null
           id: string
-          is_admin?: boolean | null
+          full_name?: string | null
+          business_type?: string | null
+          business_size?: string | null
+          is_admin?: boolean
+          is_superadmin?: boolean
+          created_at?: string
           updated_at?: string
         }
         Update: {
-          business_size?: string | null
-          business_type?: string | null
-          created_at?: string
-          full_name?: string | null
           id?: string
-          is_admin?: boolean | null
+          full_name?: string | null
+          business_type?: string | null
+          business_size?: string | null
+          is_admin?: boolean
+          is_superadmin?: boolean
+          created_at?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       target_preferences: {
         Row: {
-          created_at: string
           id: string
-          target_locations: string[] | null
-          target_segments: string[] | null
-          updated_at: string
           user_id: string
+          target_segments: string[] | null
+          target_locations: string[] | null
+          created_at: string
+          updated_at: string
         }
         Insert: {
-          created_at?: string
           id?: string
-          target_locations?: string[] | null
-          target_segments?: string[] | null
-          updated_at?: string
           user_id: string
+          target_segments?: string[] | null
+          target_locations?: string[] | null
+          created_at?: string
+          updated_at?: string
         }
         Update: {
-          created_at?: string
           id?: string
-          target_locations?: string[] | null
-          target_segments?: string[] | null
-          updated_at?: string
           user_id?: string
+          target_segments?: string[] | null
+          target_locations?: string[] | null
+          created_at?: string
+          updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "target_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       user_plans: {
         Row: {
-          created_at: string
-          end_date: string | null
           id: string
-          is_active: boolean
-          payment_reference: string | null
+          user_id: string
           plan_id: string
           start_date: string
+          end_date: string | null
+          is_active: boolean
+          payment_reference: string | null
+          created_at: string
           updated_at: string
-          user_id: string
         }
         Insert: {
-          created_at?: string
-          end_date?: string | null
           id?: string
-          is_active?: boolean
-          payment_reference?: string | null
+          user_id: string
           plan_id: string
           start_date?: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
           end_date?: string | null
-          id?: string
           is_active?: boolean
           payment_reference?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
           plan_id?: string
           start_date?: string
+          end_date?: string | null
+          is_active?: boolean
+          payment_reference?: string | null
+          created_at?: string
           updated_at?: string
-          user_id?: string
         }
         Relationships: [
           {
@@ -422,73 +456,96 @@ export type Database = {
             referencedRelation: "plans"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "user_plans_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
         ]
       }
       whatsapp_connections: {
         Row: {
-          connected_at: string | null
-          created_at: string
           id: string
-          last_used_at: string | null
+          user_id: string
           name: string
           status: string
+          connected_at: string | null
+          last_used_at: string | null
+          created_at: string
           updated_at: string
-          user_id: string
         }
         Insert: {
-          connected_at?: string | null
-          created_at?: string
           id?: string
-          last_used_at?: string | null
-          name: string
-          status?: string
-          updated_at?: string
           user_id: string
+          name: string
+          status: string
+          connected_at?: string | null
+          last_used_at?: string | null
+          created_at?: string
+          updated_at?: string
         }
         Update: {
-          connected_at?: string | null
-          created_at?: string
           id?: string
-          last_used_at?: string | null
+          user_id?: string
           name?: string
           status?: string
+          connected_at?: string | null
+          last_used_at?: string | null
+          created_at?: string
           updated_at?: string
-          user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_connections_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       whatsapp_instances: {
         Row: {
-          api_key: string
-          created_at: string
-          current_user_id: string | null
           id: string
-          instance_id: string
-          is_available: boolean | null
           name: string
+          instance_id: string
+          api_key: string
+          is_available: boolean
+          current_user_id: string | null
+          created_at: string
           updated_at: string
         }
         Insert: {
-          api_key: string
-          created_at?: string
-          current_user_id?: string | null
           id?: string
-          instance_id: string
-          is_available?: boolean | null
           name: string
+          instance_id: string
+          api_key: string
+          is_available?: boolean
+          current_user_id?: string | null
+          created_at?: string
           updated_at?: string
         }
         Update: {
-          api_key?: string
-          created_at?: string
-          current_user_id?: string | null
           id?: string
-          instance_id?: string
-          is_available?: boolean | null
           name?: string
+          instance_id?: string
+          api_key?: string
+          is_available?: boolean
+          current_user_id?: string | null
+          created_at?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_instances_current_user_id_fkey"
+            columns: ["current_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
       }
     }
     Views: {
@@ -496,12 +553,22 @@ export type Database = {
     }
     Functions: {
       allocate_whatsapp_instance: {
-        Args: { user_id: string }
+        Args: {
+          user_id: string
+        }
         Returns: string
       }
       set_admin_user: {
-        Args: { user_email: string }
-        Returns: undefined
+        Args: {
+          user_email: string
+        }
+        Returns: boolean
+      }
+      set_superadmin_user: {
+        Args: {
+          user_email: string
+        }
+        Returns: boolean
       }
     }
     Enums: {

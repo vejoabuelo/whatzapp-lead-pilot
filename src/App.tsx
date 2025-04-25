@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from "@/components/ui/sonner";
@@ -19,8 +18,26 @@ import NotFound from '@/pages/NotFound';
 import WhatsAppAdmin from '@/pages/WhatsAppAdmin';
 import AdminDashboard from '@/pages/AdminDashboard';
 import PrivateRoute from '@/components/PrivateRoute';
+import SuperAdminDashboard from '@/pages/SuperAdminDashboard';
+import SuperAdminInstances from '@/pages/SuperAdminInstances';
+import SuperAdminUsers from '@/pages/SuperAdminUsers';
+import SuperAdminMonitoring from '@/pages/SuperAdminMonitoring';
+import { useAuth } from "./providers/AuthProvider";
+import { LogOut } from "lucide-react";
+import MessageLibrary from "@/pages/MessageLibrary";
+import WhatsAppConnections from '@/pages/Messages';
 
 function App() {
+  const { signOut } = useAuth();
+
+  const handleEmergencySignOut = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error("Erro ao fazer logout de emergência:", error);
+    }
+  };
+
   return (
     <div className="App">
       <Toaster />
@@ -46,9 +63,14 @@ function App() {
             <Prospection />
           </PrivateRoute>
         } />
-        <Route path="/messages" element={
+        <Route path="/whatsapp-connections" element={
           <PrivateRoute>
-            <Messages />
+            <WhatsAppConnections />
+          </PrivateRoute>
+        } />
+        <Route path="/messages/library" element={
+          <PrivateRoute>
+            <MessageLibrary />
           </PrivateRoute>
         } />
         <Route path="/campaigns" element={
@@ -89,8 +111,41 @@ function App() {
           </PrivateRoute>
         } />
         
+        {/* Super Admin Routes */}
+        <Route path="/superadmin" element={
+          <PrivateRoute requireSuperAdmin>
+            <SuperAdminDashboard />
+          </PrivateRoute>
+        } />
+        <Route path="/superadmin/instances" element={
+          <PrivateRoute requireSuperAdmin>
+            <SuperAdminInstances />
+          </PrivateRoute>
+        } />
+        <Route path="/superadmin/users" element={
+          <PrivateRoute requireSuperAdmin>
+            <SuperAdminUsers />
+          </PrivateRoute>
+        } />
+        <Route path="/superadmin/monitoring" element={
+          <PrivateRoute requireSuperAdmin>
+            <SuperAdminMonitoring />
+          </PrivateRoute>
+        } />
+        
         <Route path="*" element={<NotFound />} />
       </Routes>
+      
+      {/* Botão de logout de emergência - sempre visível */}
+      <div className="logout-button-area">
+        <button 
+          className="emergency-logout"
+          onClick={handleEmergencySignOut}
+        >
+          <LogOut size={16} />
+          Sair
+        </button>
+      </div>
     </div>
   );
 }

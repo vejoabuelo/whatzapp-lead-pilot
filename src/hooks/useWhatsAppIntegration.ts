@@ -1,59 +1,100 @@
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
-import { getQRCode, checkConnectionStatus, sendWhatsAppMessage } from '@/services/whatsappService';
+import { getQRCode, getPairingCode, checkConnectionStatus, forceDisconnectInstance } from '@/services/whatsappService';
 import { useWhatsappConnections } from './useWhatsappConnections';
 import { useWhatsappInstances } from './useWhatsappInstances';
 import { useAuth } from '@/providers/AuthProvider';
 
 export function useWhatsAppIntegration() {
   const [qrCode, setQrCode] = useState<string | null>(null);
+  const [pairingCode, setPairingCode] = useState<string | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
   const { updateConnection } = useWhatsappConnections();
   const { allocateInstance } = useWhatsappInstances();
   const { user } = useAuth();
 
-  const startConnection = useCallback(async (connectionId: string) => {
+  const startConnection = useCallback(async (connectionId: string, phoneNumber?: string) => {
     if (!user) return;
     
     setIsConnecting(true);
+    setQrCode(null);
+    setPairingCode(null);
+    
+    let statusCheck: NodeJS.Timeout;
+
     try {
       // Primeiro, aloca uma instância disponível para o usuário
-      await allocateInstance(user.id);
+      const instance = await allocateInstance(user.id);
+      if (!instance) {
+        throw new Error('Não foi possível alocar uma instância do WhatsApp');
+      }
+
+      // Força a desconexão da instância antes de tentar conectar
+      await forceDisconnectInstance(instance.instance_id);
+
+      // Atualiza o status para 'connecting' e associa a instância
+      await updateConnection(connectionId, { 
+        status: 'connecting',
+        instance_id: instance.instance_id
+      });
+
+      // Se forneceu número de telefone, tenta código de pareamento
+      if (phoneNumber) {
+        const { pairingCode: code } = await getPairingCode(phoneNumber);
+        setPairingCode(code);
+      } else {
+        // Caso contrário, gera QR code
+        const { qrCode: newQrCode } = await getQRCode();
+        setQrCode(newQrCode);
+      }
       
-      const { qrCode: newQrCode, instanceId } = await getQRCode();
-      setQrCode(newQrCode);
-      
-      // Start polling for connection status
-      const statusCheck = setInterval(async () => {
-        const status = await checkConnectionStatus();
-        if (status.connected) {
-          clearInterval(statusCheck);
-          setQrCode(null);
-          setIsConnecting(false);
-          await updateConnection(connectionId, { 
-            status: 'connected',
-            connected_at: new Date().toISOString()
-          });
-          toast.success('WhatsApp conectado com sucesso!');
+      // Inicia a verificação de status
+      statusCheck = setInterval(async () => {
+        try {
+          const status = await checkConnectionStatus();
+          if (status.connected) {
+            clearInterval(statusCheck);
+            setQrCode(null);
+            setPairingCode(null);
+            setIsConnecting(false);
+            await updateConnection(connectionId, { status: 'connected' });
+            toast.success('WhatsApp conectado com sucesso!');
+          }
+        } catch (error) {
+          console.error('Error checking status:', error);
         }
       }, 5000);
 
-      // Stop polling after 2 minutes
+      // Para a verificação após 2 minutos
       setTimeout(() => {
         clearInterval(statusCheck);
         if (isConnecting) {
           setIsConnecting(false);
           setQrCode(null);
+          setPairingCode(null);
+          updateConnection(connectionId, { 
+            status: 'disconnected',
+            instance_id: null
+          });
           toast.error('Tempo de conexão expirado. Tente novamente.');
         }
       }, 120000);
 
     } catch (error) {
       console.error('Error starting WhatsApp connection:', error);
-      toast.error('Erro ao iniciar conexão com WhatsApp');
+      toast.error(error instanceof Error ? error.message : 'Erro ao iniciar conexão com WhatsApp');
       setIsConnecting(false);
+      setQrCode(null);
+      setPairingCode(null);
+      clearInterval(statusCheck!);
+      
+      // Se houver erro, garante que o status volta para desconectado
+      await updateConnection(connectionId, { 
+        status: 'disconnected',
+        instance_id: null
+      });
     }
-  }, [updateConnection, allocateInstance, user]);
+  }, [updateConnection, allocateInstance, user, isConnecting]);
 
   const sendMessage = useCallback(async (phone: string, message: string) => {
     try {
@@ -69,6 +110,7 @@ export function useWhatsAppIntegration() {
 
   return {
     qrCode,
+    pairingCode,
     isConnecting,
     startConnection,
     sendMessage

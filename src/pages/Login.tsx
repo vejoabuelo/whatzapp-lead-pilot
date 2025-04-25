@@ -1,26 +1,61 @@
-
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { EyeIcon, EyeOffIcon, Loader2 } from "lucide-react";
+import { EyeIcon, EyeOffIcon, Loader2, AlertCircle, CheckCircle } from "lucide-react";
 import { useAuth } from "@/providers/AuthProvider";
+import { toast } from "sonner";
+import { validateEmail, normalizeEmail, getEmailSuggestion, SUGGESTED_DOMAINS } from "@/utils/emailValidation";
 
 const Login = () => {
   const [email, setEmail] = useState("");
+  const [emailError, setEmailError] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [emailFocused, setEmailFocused] = useState(false);
   const { signIn } = useAuth();
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newEmail = e.target.value;
+    setEmail(newEmail);
+    
+    // Don't show validation errors immediately for empty fields
+    if (newEmail) {
+      const validation = validateEmail(newEmail);
+      setEmailError(validation.message);
+    } else {
+      setEmailError("");
+    }
+  };
+
+  const handleEmailBlur = () => {
+    setEmailFocused(false);
+    if (email) {
+      const validation = validateEmail(email);
+      setEmailError(validation.message);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate e-mail
+    const emailValidation = validateEmail(email);
+    if (!emailValidation.valid && email) {
+      toast.error("E-mail inválido", {
+        description: emailValidation.message
+      });
+      return;
+    }
+    
     setIsLoading(true);
 
     try {
-      await signIn(email, password);
+      const trimmedEmail = normalizeEmail(email);
+      await signIn(trimmedEmail, password);
     } catch (error) {
       console.error("Login error:", error);
     } finally {
@@ -30,6 +65,13 @@ const Login = () => {
 
   const toggleShowPassword = () => {
     setShowPassword(!showPassword);
+  };
+
+  // Check if email domain is one of the suggested domains
+  const isValidDomain = () => {
+    if (!email || !email.includes('@')) return false;
+    const domain = email.split('@')[1].toLowerCase();
+    return SUGGESTED_DOMAINS.includes(domain);
   };
 
   return (
@@ -55,20 +97,40 @@ const Login = () => {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">E-mail</Label>
-              <Input 
-                id="email"
-                type="email" 
-                placeholder="seu@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
+              <Label htmlFor="email" className={emailError ? "text-red-500" : ""}>E-mail</Label>
+              <div className="relative">
+                <Input 
+                  id="email"
+                  type="email" 
+                  placeholder="seu@email.com"
+                  value={email}
+                  onChange={handleEmailChange}
+                  onFocus={() => setEmailFocused(true)}
+                  onBlur={handleEmailBlur}
+                  required
+                  className={emailError ? "border-red-300 pr-10 focus-visible:ring-red-500" : (isValidDomain() ? "border-green-300 pr-10 focus-visible:ring-green-500" : "")}
+                />
+                {emailError && (
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <AlertCircle className="h-5 w-5 text-red-500" />
+                  </div>
+                )}
+                {!emailError && isValidDomain() && (
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <CheckCircle className="h-5 w-5 text-green-500" />
+                  </div>
+                )}
+              </div>
+              {emailError ? (
+                <p className="text-xs text-red-500 mt-1">{emailError}</p>
+              ) : (
+                <p className="text-xs text-gray-500">{getEmailSuggestion()}</p>
+              )}
             </div>
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <Label htmlFor="password">Senha</Label>
-                <Link to="/forgot-password" className="text-sm text-brandBlue-600 hover:text-brandBlue-700">
+                <Link to="/forgot-password" className="text-sm text-primary hover:underline">
                   Esqueceu a senha?
                 </Link>
               </div>
@@ -95,7 +157,7 @@ const Login = () => {
             <Button 
               type="submit" 
               className="w-full" 
-              disabled={isLoading}
+              disabled={isLoading || !!emailError}
             >
               {isLoading ? (
                 <>
@@ -109,7 +171,7 @@ const Login = () => {
         <CardFooter className="flex flex-col space-y-4">
           <div className="text-center text-sm text-gray-600">
             Não tem uma conta?{" "}
-            <Link to="/register" className="text-brandBlue-600 hover:text-brandBlue-700 font-medium">
+            <Link to="/register" className="text-primary hover:underline font-medium">
               Cadastre-se
             </Link>
           </div>
