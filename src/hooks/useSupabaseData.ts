@@ -50,7 +50,7 @@ export function useSupabaseData<T>(
     }
   };
 
-  const addItem = async (item: any) => {
+  const addItem = async (item: Partial<T>) => {
     try {
       const { data: result, error } = await supabase
         .from(tableName)
@@ -69,7 +69,7 @@ export function useSupabaseData<T>(
     }
   };
 
-  const updateItem = async (id: string, updates: any) => {
+  const updateItem = async (id: string, updates: Partial<T>) => {
     try {
       const { data: result, error } = await supabase
         .from(tableName)
