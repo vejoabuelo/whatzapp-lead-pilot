@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import type { Campaign, CampaignLead, WhatsappInstance } from '@/types/database';
+import type { Campaign, CampaignLead, Empresa } from '@/types/database';
 import { toast } from 'sonner';
 
 interface WhatsAppMessage {
@@ -10,11 +10,12 @@ interface WhatsAppMessage {
   shouldVaryMessage?: boolean;
 }
 
-// Sistema simulado para demonstração
-const SIMULATED_WHATSAPP_NUMBER = "+55 11 9999-9999";
+// Sistema simulado para demonstração - Número interno da empresa
+const COMPANY_WHATSAPP_NUMBER = "+55 11 9 9999-9999";
+const COMPANY_NAME = "Sistema de Prospecção";
 
 export async function simulateWhatsAppSend({ phone, message }: WhatsAppMessage) {
-  // Simular delay de envio
+  // Simular delay de envio realista
   await new Promise(resolve => setTimeout(resolve, Math.random() * 2000 + 1000));
   
   // Simular taxa de sucesso de 95%
@@ -25,7 +26,7 @@ export async function simulateWhatsAppSend({ phone, message }: WhatsAppMessage) 
       success: true,
       messageId: `sim_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       timestamp: new Date().toISOString(),
-      simulatedNumber: SIMULATED_WHATSAPP_NUMBER
+      simulatedNumber: COMPANY_WHATSAPP_NUMBER
     };
   } else {
     throw new Error('Falha simulada no envio');
@@ -62,7 +63,7 @@ export async function startSimulatedCampaign(campaignId: string, empresaIds: str
     // Processar cada empresa
     for (const empresa of empresas || []) {
       try {
-        // Personalizar mensagem
+        // Personalizar mensagem com dados da empresa
         const personalizedMessage = messageContent
           .replace(/\{nome\}/g, empresa.razao_social || empresa.nome_fantasia || 'Empresa')
           .replace(/\{cidade\}/g, empresa.municipio || 'Sua cidade')
@@ -74,12 +75,12 @@ export async function startSimulatedCampaign(campaignId: string, empresaIds: str
           message: personalizedMessage
         });
 
-        // Registrar envio bem-sucedido
+        // Registrar envio bem-sucedido na tabela campaign_leads
         await supabase
           .from('campaign_leads')
           .insert({
             campaign_id: campaignId,
-            empresa_id: empresa.id,
+            lead_id: empresa.id || 'unknown',
             status: 'sent',
             sent_message: personalizedMessage,
             sent_at: new Date().toISOString()
@@ -97,7 +98,7 @@ export async function startSimulatedCampaign(campaignId: string, empresaIds: str
               response_at: new Date().toISOString()
             })
             .eq('campaign_id', campaignId)
-            .eq('empresa_id', empresa.id);
+            .eq('lead_id', empresa.id);
         }
 
       } catch (error) {
@@ -106,7 +107,7 @@ export async function startSimulatedCampaign(campaignId: string, empresaIds: str
           .from('campaign_leads')
           .insert({
             campaign_id: campaignId,
-            empresa_id: empresa.id,
+            lead_id: empresa.id || 'unknown',
             status: 'failed',
             error_message: error instanceof Error ? error.message : 'Erro desconhecido',
             sent_at: new Date().toISOString()
@@ -138,7 +139,7 @@ export async function startSimulatedCampaign(campaignId: string, empresaIds: str
       sent: sentCount,
       success: successCount,
       failed: failedCount,
-      simulatedNumber: SIMULATED_WHATSAPP_NUMBER
+      simulatedNumber: COMPANY_WHATSAPP_NUMBER
     };
 
   } catch (error) {
@@ -163,7 +164,8 @@ export function generateSimulatedReport(campaignData: any) {
     sentMessages: campaignData.sent_count || 0,
     successRate: campaignData.sent_count > 0 ? ((campaignData.success_count || 0) / campaignData.sent_count * 100).toFixed(1) : '0',
     responseRate: campaignData.success_count > 0 ? ((campaignData.response_count || 0) / campaignData.success_count * 100).toFixed(1) : '0',
-    simulatedNumber: SIMULATED_WHATSAPP_NUMBER,
+    simulatedNumber: COMPANY_WHATSAPP_NUMBER,
+    companyName: COMPANY_NAME,
     timestamp: new Date().toLocaleString('pt-BR')
   };
 }
@@ -189,4 +191,13 @@ export async function checkIfUserHasPaidPlan(userId: string): Promise<boolean> {
     console.error('Error checking user plan:', error);
     return false;
   }
+}
+
+// Funções removidas que causavam erro
+export function disconnectInstance() {
+  // Placeholder function for compatibility
+}
+
+export function forceDisconnectInstance() {
+  // Placeholder function for compatibility
 }

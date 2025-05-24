@@ -1,124 +1,109 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import type { MessageCategory, MessageTemplate } from '@/types/database';
-
-export interface DatabaseCategory {
-  id: string;
-  name: string;
-  description: string | null;
-  segment: string | null;
-  user_id: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface DatabaseTemplate {
-  id: string;
-  category_id: string;
-  content: string;
-  variables_used: string[] | null;
-  usage_count: number;
-  response_rate: number | null;
-  created_at: string;
-  updated_at: string;
-}
+import { MessageCategory, MessageTemplate } from '@/types/database';
+import { toast } from 'sonner';
 
 export class MessageService {
-  static async createCategory(categoryData: Partial<MessageCategory>): Promise<DatabaseCategory> {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) throw new Error('User not authenticated');
-
-    const { data, error } = await supabase
-      .from('message_categories')
-      .insert({
-        ...categoryData,
-        user_id: session.user.id
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
-  }
-
-  static async getUserCategories(): Promise<DatabaseCategory[]> {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) throw new Error('User not authenticated');
-
-    const { data, error } = await supabase
-      .from('message_categories')
-      .select('*')
-      .eq('user_id', session.user.id)
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
-    return data || [];
-  }
-
-  static async createTemplate(templateData: Partial<MessageTemplate>): Promise<DatabaseTemplate> {
-    const { data, error } = await supabase
-      .from('message_templates')
-      .insert(templateData)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
-  }
-
-  static async getTemplatesByCategory(categoryId: string): Promise<DatabaseTemplate[]> {
-    const { data, error } = await supabase
-      .from('message_templates')
-      .select('*')
-      .eq('category_id', categoryId)
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
-    return data || [];
-  }
-
-  static async updateTemplate(id: string, updates: Partial<DatabaseTemplate>): Promise<DatabaseTemplate> {
-    const { data, error } = await supabase
-      .from('message_templates')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
-  }
-
-  static async deleteTemplate(id: string): Promise<void> {
-    const { error } = await supabase
-      .from('message_templates')
-      .delete()
-      .eq('id', id);
-
-    if (error) throw error;
-  }
-
-  static async incrementTemplateUsage(id: string): Promise<void> {
-    const { error } = await supabase.rpc('increment_template_usage', {
-      template_id: id
-    });
-
-    if (error) {
-      // Fallback: manual increment
-      const { data: template } = await supabase
-        .from('message_templates')
-        .select('usage_count')
-        .eq('id', id)
+  // Métodos para categorias de mensagem
+  static async createCategory(categoryData: {
+    name: string;
+    description?: string;
+    segment?: string;
+    user_id: string;
+  }): Promise<MessageCategory> {
+    try {
+      const { data, error } = await supabase
+        .from('message_categories')
+        .insert({
+          name: categoryData.name,
+          description: categoryData.description,
+          segment: categoryData.segment,
+          user_id: categoryData.user_id
+        })
+        .select()
         .single();
 
-      if (template) {
-        await supabase
-          .from('message_templates')
-          .update({ usage_count: (template.usage_count || 0) + 1 })
-          .eq('id', id);
-      }
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error creating category:', error);
+      throw error;
+    }
+  }
+
+  static async getCategories(userId: string): Promise<MessageCategory[]> {
+    try {
+      const { data, error } = await supabase
+        .from('message_categories')
+        .select('*')
+        .eq('user_id', userId);
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      throw error;
+    }
+  }
+
+  // Métodos para templates de mensagem
+  static async createTemplate(templateData: {
+    category_id: string;
+    content: string;
+    variables_used?: string[];
+  }): Promise<MessageTemplate> {
+    try {
+      const { data, error } = await supabase
+        .from('message_templates')
+        .insert({
+          category_id: templateData.category_id,
+          content: templateData.content,
+          variables_used: templateData.variables_used || []
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error creating template:', error);
+      throw error;
+    }
+  }
+
+  static async getTemplatesByCategory(categoryId: string): Promise<MessageTemplate[]> {
+    try {
+      const { data, error } = await supabase
+        .from('message_templates')
+        .select('*')
+        .eq('category_id', categoryId);
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching templates:', error);
+      throw error;
+    }
+  }
+
+  static async deleteTemplate(templateId: string): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('message_templates')
+        .delete()
+        .eq('id', templateId);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error deleting template:', error);
+      throw error;
     }
   }
 }
 
+// Export default for compatibility
 export default MessageService;
+
+// Named exports for components that expect them
+export { MessageCategory, MessageTemplate };
+export const messageService = MessageService;

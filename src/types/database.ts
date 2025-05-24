@@ -79,7 +79,7 @@ export interface Empresa {
   identificador_matriz_filial: number | null;
 }
 
-// Alias para compatibilidade com componentes existentes
+// Legacy Lead interface for compatibility
 export interface Lead {
   id: string;
   user_id: string;

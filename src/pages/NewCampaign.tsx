@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -245,8 +246,8 @@ const NewCampaign = () => {
                                     <input 
                                       type="checkbox" 
                                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-4 w-4"
-                                      checked={selectedEmpresas.includes(empresa.id)}
-                                      onChange={() => handleSelectEmpresa(empresa.id)}
+                                      checked={selectedEmpresas.includes(empresa.id || '')}
+                                      onChange={() => handleSelectEmpresa(empresa.id || '')}
                                     />
                                   </div>
                                 </td>
@@ -376,7 +377,7 @@ const NewCampaign = () => {
                             {isEmpresasLoading ? (
                               <p>Carregando...</p>
                             ) : (
-                              empresas?.filter(empresa => selectedEmpresas.includes(empresa.id))
+                              empresas?.filter(empresa => selectedEmpresas.includes(empresa.id || ''))
                                 .map(empresa => (
                                   <li key={empresa.id} className="flex items-center">
                                     <Check size={12} className="text-green-500 mr-2" />

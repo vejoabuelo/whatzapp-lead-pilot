@@ -13,83 +13,95 @@ export function useWhatsappInstances() {
     try {
       const { data, error } = await supabase
         .from('whatsapp_instances')
-        .select('*')
-        .eq('is_available', true);
+        .select('*');
 
       if (error) throw error;
       setInstances(data || []);
     } catch (error) {
       console.error('Error fetching instances:', error);
-      toast.error('Erro ao carregar instâncias do WhatsApp');
+      toast.error('Erro ao carregar instâncias WhatsApp');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const allocateInstance = async (userId: string): Promise<WhatsappInstance | null> => {
+  const addInstance = async (instanceData: Partial<WhatsappInstance>) => {
     try {
-      // Find an available instance
-      const { data: availableInstances, error } = await supabase
+      const { data, error } = await supabase
         .from('whatsapp_instances')
-        .select('*')
-        .eq('is_available', true)
-        .lt('current_free_users', 'max_free_users');
-
-      if (error) throw error;
-
-      if (!availableInstances || availableInstances.length === 0) {
-        toast.error('Nenhuma instância do WhatsApp disponível no momento');
-        return null;
-      }
-
-      const instance = availableInstances[0];
-
-      // Allocate the instance to the user
-      const { data: updatedInstance, error: updateError } = await supabase
-        .from('whatsapp_instances')
-        .update({
-          current_user_id: userId,
-          current_free_users: instance.current_free_users + 1
-        })
-        .eq('id', instance.id)
+        .insert(instanceData)
         .select()
         .single();
 
-      if (updateError) throw updateError;
-
-      return updatedInstance;
+      if (error) throw error;
+      
+      setInstances(prev => [...prev, data]);
+      toast.success('Instância adicionada com sucesso');
+      return data;
     } catch (error) {
-      console.error('Error allocating instance:', error);
-      toast.error('Erro ao alocar instância do WhatsApp');
-      return null;
+      console.error('Error adding instance:', error);
+      toast.error('Erro ao adicionar instância');
+      throw error;
     }
   };
 
-  const releaseInstance = async (instanceId: string, userId: string) => {
+  const updateInstance = async (id: string, updates: Partial<WhatsappInstance>) => {
     try {
-      const { data: instance, error: fetchError } = await supabase
+      const { data, error } = await supabase
         .from('whatsapp_instances')
-        .select('*')
-        .eq('id', instanceId)
+        .update(updates)
+        .eq('id', id)
+        .select()
         .single();
 
-      if (fetchError) throw fetchError;
+      if (error) throw error;
+      
+      setInstances(prev => prev.map(inst => inst.id === id ? data : inst));
+      toast.success('Instância atualizada com sucesso');
+      return data;
+    } catch (error) {
+      console.error('Error updating instance:', error);
+      toast.error('Erro ao atualizar instância');
+      throw error;
+    }
+  };
 
+  const deleteInstance = async (id: string) => {
+    try {
       const { error } = await supabase
         .from('whatsapp_instances')
-        .update({
-          current_user_id: null,
-          current_free_users: Math.max(0, instance.current_free_users - 1)
-        })
-        .eq('id', instanceId);
+        .delete()
+        .eq('id', id);
 
       if (error) throw error;
-
-      toast.success('Instância liberada com sucesso');
+      
+      setInstances(prev => prev.filter(inst => inst.id !== id));
+      toast.success('Instância removida com sucesso');
     } catch (error) {
-      console.error('Error releasing instance:', error);
-      toast.error('Erro ao liberar instância');
+      console.error('Error deleting instance:', error);
+      toast.error('Erro ao remover instância');
+      throw error;
     }
+  };
+
+  const allocateInstance = async (userId: string): Promise<WhatsappInstance> => {
+    // Simulated allocation for free users
+    const availableInstance = instances.find(inst => inst.is_available);
+    if (!availableInstance) {
+      throw new Error('Nenhuma instância disponível');
+    }
+    
+    return availableInstance;
+  };
+
+  const releaseInstance = async (instanceId: string, userId: string) => {
+    // Simulated release
+    toast.success('Instância liberada');
+  };
+
+  const disconnectUser = async (instanceId: string, userId: string) => {
+    // Simulated disconnect
+    toast.success('Usuário desconectado da instância');
   };
 
   useEffect(() => {
@@ -100,7 +112,11 @@ export function useWhatsappInstances() {
     instances,
     isLoading,
     fetchInstances,
+    addInstance,
+    updateInstance,
+    deleteInstance,
     allocateInstance,
-    releaseInstance
+    releaseInstance,
+    disconnectUser
   };
 }
