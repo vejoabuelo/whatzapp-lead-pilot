@@ -42,7 +42,7 @@ export function useSupabaseData<T>(
     setError(null);
 
     try {
-      let query = supabase.from(tableName as any).select('*');
+      let query = supabase.from(tableName).select('*');
       
       if (options?.queryFilter) {
         query = options.queryFilter(query);
@@ -65,7 +65,7 @@ export function useSupabaseData<T>(
   const addItem = async (item: any) => {
     try {
       const { data: result, error } = await supabase
-        .from(tableName as any)
+        .from(tableName)
         .insert(item)
         .select();
 
@@ -84,7 +84,7 @@ export function useSupabaseData<T>(
   const updateItem = async (id: string, updates: any) => {
     try {
       const { data: result, error } = await supabase
-        .from(tableName as any)
+        .from(tableName)
         .update(updates)
         .eq('id', id)
         .select();
@@ -104,7 +104,7 @@ export function useSupabaseData<T>(
   const deleteItem = async (id: string) => {
     try {
       const { error } = await supabase
-        .from(tableName as any)
+        .from(tableName)
         .delete()
         .eq('id', id);
 

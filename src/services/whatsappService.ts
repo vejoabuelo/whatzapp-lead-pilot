@@ -38,11 +38,11 @@ export async function startSimulatedCampaign(campaignId: string, empresaIds: str
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) throw new Error('User not authenticated');
 
-    // Buscar empresas selecionadas
+    // Buscar empresas selecionadas pela ID ou CNPJ
     const { data: empresas, error: empresasError } = await supabase
       .from('empresas')
       .select('*')
-      .in('id', empresaIds);
+      .in('cnpj_basico', empresaIds);
 
     if (empresasError) throw empresasError;
 
@@ -80,7 +80,7 @@ export async function startSimulatedCampaign(campaignId: string, empresaIds: str
           .from('campaign_leads')
           .insert({
             campaign_id: campaignId,
-            lead_id: empresa.id || 'unknown',
+            lead_id: empresa.cnpj_basico || 'unknown',
             status: 'sent',
             sent_message: personalizedMessage,
             sent_at: new Date().toISOString()
@@ -98,7 +98,7 @@ export async function startSimulatedCampaign(campaignId: string, empresaIds: str
               response_at: new Date().toISOString()
             })
             .eq('campaign_id', campaignId)
-            .eq('lead_id', empresa.id);
+            .eq('lead_id', empresa.cnpj_basico);
         }
 
       } catch (error) {
@@ -107,7 +107,7 @@ export async function startSimulatedCampaign(campaignId: string, empresaIds: str
           .from('campaign_leads')
           .insert({
             campaign_id: campaignId,
-            lead_id: empresa.id || 'unknown',
+            lead_id: empresa.cnpj_basico || 'unknown',
             status: 'failed',
             error_message: error instanceof Error ? error.message : 'Erro desconhecido',
             sent_at: new Date().toISOString()

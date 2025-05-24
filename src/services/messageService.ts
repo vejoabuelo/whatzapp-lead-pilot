@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { MessageCategory, MessageTemplate } from '@/types/database';
+import type { MessageCategory, MessageTemplate } from '@/types/database';
 import { toast } from 'sonner';
 
 export class MessageService {
@@ -46,6 +46,20 @@ export class MessageService {
     }
   }
 
+  static async deleteCategory(categoryId: string): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('message_categories')
+        .delete()
+        .eq('id', categoryId);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      throw error;
+    }
+  }
+
   // Métodos para templates de mensagem
   static async createTemplate(templateData: {
     category_id: string;
@@ -86,6 +100,26 @@ export class MessageService {
     }
   }
 
+  static async updateTemplate(templateId: string, updates: {
+    content: string;
+    variables_used?: string[];
+  }): Promise<MessageTemplate> {
+    try {
+      const { data, error } = await supabase
+        .from('message_templates')
+        .update(updates)
+        .eq('id', templateId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error updating template:', error);
+      throw error;
+    }
+  }
+
   static async deleteTemplate(templateId: string): Promise<void> {
     try {
       const { error } = await supabase
@@ -105,5 +139,5 @@ export class MessageService {
 export default MessageService;
 
 // Named exports for components that expect them
-export { MessageCategory, MessageTemplate };
+export type { MessageCategory, MessageTemplate };
 export const messageService = MessageService;

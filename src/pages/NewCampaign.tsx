@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -60,11 +59,11 @@ const NewCampaign = () => {
     empresa.telefone_1
   );
 
-  const handleSelectEmpresa = (empresaId: string) => {
-    if (selectedEmpresas.includes(empresaId)) {
-      setSelectedEmpresas(selectedEmpresas.filter(id => id !== empresaId));
+  const handleSelectEmpresa = (empresaCnpj: string) => {
+    if (selectedEmpresas.includes(empresaCnpj)) {
+      setSelectedEmpresas(selectedEmpresas.filter(cnpj => cnpj !== empresaCnpj));
     } else {
-      setSelectedEmpresas([...selectedEmpresas, empresaId]);
+      setSelectedEmpresas([...selectedEmpresas, empresaCnpj]);
     }
   };
 
@@ -72,7 +71,7 @@ const NewCampaign = () => {
     if (filteredEmpresas?.length === selectedEmpresas.length) {
       setSelectedEmpresas([]);
     } else {
-      setSelectedEmpresas(filteredEmpresas?.map(empresa => empresa.id || '') || []);
+      setSelectedEmpresas(filteredEmpresas?.map(empresa => empresa.cnpj_basico || '') || []);
     }
   };
 
@@ -240,14 +239,14 @@ const NewCampaign = () => {
                           </thead>
                           <tbody>
                             {filteredEmpresas?.map((empresa) => (
-                              <tr key={empresa.id} className="border-b border-gray-200 hover:bg-gray-50">
+                              <tr key={empresa.cnpj_basico} className="border-b border-gray-200 hover:bg-gray-50">
                                 <td className="py-3 px-4">
                                   <div className="flex items-center">
                                     <input 
                                       type="checkbox" 
                                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-4 w-4"
-                                      checked={selectedEmpresas.includes(empresa.id || '')}
-                                      onChange={() => handleSelectEmpresa(empresa.id || '')}
+                                      checked={selectedEmpresas.includes(empresa.cnpj_basico || '')}
+                                      onChange={() => handleSelectEmpresa(empresa.cnpj_basico || '')}
                                     />
                                   </div>
                                 </td>
@@ -377,9 +376,9 @@ const NewCampaign = () => {
                             {isEmpresasLoading ? (
                               <p>Carregando...</p>
                             ) : (
-                              empresas?.filter(empresa => selectedEmpresas.includes(empresa.id || ''))
+                              empresas?.filter(empresa => selectedEmpresas.includes(empresa.cnpj_basico || ''))
                                 .map(empresa => (
-                                  <li key={empresa.id} className="flex items-center">
+                                  <li key={empresa.cnpj_basico} className="flex items-center">
                                     <Check size={12} className="text-green-500 mr-2" />
                                     {empresa.nome_fantasia || empresa.razao_social} - {empresa.telefone_1}
                                   </li>

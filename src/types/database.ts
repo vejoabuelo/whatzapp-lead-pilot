@@ -142,6 +142,7 @@ export interface MessageCategory {
   segment: string | null;
   created_at: string;
   updated_at: string;
+  message_count?: number; // For computed fields
 }
 
 export interface MessageTemplate {
@@ -153,6 +154,9 @@ export interface MessageTemplate {
   response_rate: number | null;
   created_at: string;
   updated_at: string;
+  name?: string; // For compatibility
+  description?: string; // For compatibility
+  variables?: string[]; // For compatibility
 }
 
 export interface WhatsappConnection {
@@ -191,4 +195,15 @@ export interface WhatsappInstance {
   current_free_users: number;
   created_at: string;
   updated_at: string;
+}
+
+// Insert types for database operations
+export interface WhatsappInstanceInsert {
+  name: string;
+  instance_id: string;
+  api_key: string;
+  host?: string;
+  is_available?: boolean;
+  max_free_users?: number;
+  current_free_users?: number;
 }
