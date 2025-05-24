@@ -7,12 +7,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import Sidebar from "@/components/dashboard/Sidebar";
 import { useSupabaseData } from "@/hooks/useSupabaseData";
 import { useAuth } from "@/providers/AuthProvider";
-import { useWhatsappConnections } from "@/hooks/useWhatsappConnections";
-import { Lead, Campaign } from "@/types/database";
+import { Empresa, Campaign } from "@/types/database";
+import { startSimulatedCampaign } from "@/services/whatsappService";
 import { 
   ArrowLeft, 
   Plus, 
@@ -24,7 +24,8 @@ import {
   Filter,
   Search,
   Check,
-  Loader2
+  Loader2,
+  Zap
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -34,47 +35,48 @@ const NewCampaign = () => {
   const [activeTab, setActiveTab] = useState("leads");
   const [campaignName, setCampaignName] = useState("");
   const [message, setMessage] = useState("");
-  const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
+  const [selectedEmpresas, setSelectedEmpresas] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [isStartingCampaign, setIsStartingCampaign] = useState(false);
   
   const { 
-    data: leads,
-    isLoading: isLeadsLoading
-  } = useSupabaseData<Lead>('leads', { 
+    data: empresas,
+    isLoading: isEmpresasLoading
+  } = useSupabaseData<Empresa>('empresas', { 
     fetchOnMount: true
   });
-
-  const { connections, isLoading: isConnectionsLoading } = useWhatsappConnections();
   
   const { 
     addItem: addCampaign,
     isLoading: isAddingCampaign
   } = useSupabaseData<Campaign>('campaigns');
 
-  const filteredLeads = leads?.filter(lead => 
-    (lead.company_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    lead.cnae_description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    lead.city?.toLowerCase().includes(searchTerm.toLowerCase())) &&
-    lead.has_whatsapp
+  const filteredEmpresas = empresas?.filter(empresa => 
+    (empresa.razao_social?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    empresa.nome_fantasia?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    empresa.cnae_descricao?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    empresa.municipio?.toLowerCase().includes(searchTerm.toLowerCase())) &&
+    empresa.situacao_cadastral === 'ATIVA' &&
+    empresa.telefone_1
   );
 
-  const handleSelectLead = (leadId: string) => {
-    if (selectedLeads.includes(leadId)) {
-      setSelectedLeads(selectedLeads.filter(id => id !== leadId));
+  const handleSelectEmpresa = (empresaId: string) => {
+    if (selectedEmpresas.includes(empresaId)) {
+      setSelectedEmpresas(selectedEmpresas.filter(id => id !== empresaId));
     } else {
-      setSelectedLeads([...selectedLeads, leadId]);
+      setSelectedEmpresas([...selectedEmpresas, empresaId]);
     }
   };
 
-  const handleSelectAllLeads = () => {
-    if (filteredLeads?.length === selectedLeads.length) {
-      setSelectedLeads([]);
+  const handleSelectAllEmpresas = () => {
+    if (filteredEmpresas?.length === selectedEmpresas.length) {
+      setSelectedEmpresas([]);
     } else {
-      setSelectedLeads(filteredLeads?.map(lead => lead.id) || []);
+      setSelectedEmpresas(filteredEmpresas?.map(empresa => empresa.id) || []);
     }
   };
 
-  const handleCreateCampaign = async () => {
+  const handleCreateAndStartCampaign = async () => {
     if (!campaignName.trim()) {
       toast.error("Forneça um nome para a campanha");
       return;
@@ -85,39 +87,42 @@ const NewCampaign = () => {
       return;
     }
 
-    if (selectedLeads.length === 0) {
-      toast.error("Selecione pelo menos um lead para a campanha");
+    if (selectedEmpresas.length === 0) {
+      toast.error("Selecione pelo menos uma empresa para a campanha");
       return;
     }
 
-    if (connections.length === 0 || !connections.some(c => c.status === 'connected')) {
-      toast.error("Conecte pelo menos uma conta de WhatsApp");
-      return;
-    }
+    setIsStartingCampaign(true);
 
     try {
+      // Criar a campanha
       const newCampaign = await addCampaign({
         name: campaignName,
         user_id: user?.id,
         status: 'draft',
-        min_delay: 12,
-        max_delay: 45
+        description: `Campanha com ${selectedEmpresas.length} empresas selecionadas`
       });
 
       if (newCampaign) {
-        toast.success("Campanha criada com sucesso!");
+        toast.success("Campanha criada! Iniciando envios simulados...");
+        
+        // Iniciar campanha simulada
+        await startSimulatedCampaign(newCampaign.id, selectedEmpresas, message);
+        
         navigate("/campaigns");
       }
     } catch (error) {
       console.error("Error creating campaign:", error);
       toast.error("Erro ao criar campanha");
+    } finally {
+      setIsStartingCampaign(false);
     }
   };
 
   const handleNextTab = () => {
     if (activeTab === "leads") {
-      if (selectedLeads.length === 0) {
-        toast.error("Selecione pelo menos um lead");
+      if (selectedEmpresas.length === 0) {
+        toast.error("Selecione pelo menos uma empresa");
         return;
       }
       setActiveTab("message");
@@ -150,6 +155,10 @@ const NewCampaign = () => {
               </Button>
               <h1 className="text-2xl font-semibold text-gray-800 ml-2">Nova Campanha</h1>
             </div>
+            <Badge variant="secondary" className="gap-2">
+              <Zap size={14} />
+              Modo Simulado
+            </Badge>
           </div>
         </header>
 
@@ -157,7 +166,9 @@ const NewCampaign = () => {
           <Card>
             <CardHeader>
               <CardTitle>Criar Nova Campanha</CardTitle>
-              <CardDescription>Configure sua campanha de mensagens</CardDescription>
+              <CardDescription>
+                Configure sua campanha de mensagens. No modo simulado, todas as mensagens são registradas mas não enviadas via WhatsApp real.
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="mb-6">
@@ -173,7 +184,7 @@ const NewCampaign = () => {
 
               <Tabs value={activeTab} onValueChange={setActiveTab}>
                 <TabsList className="mb-6 grid grid-cols-3">
-                  <TabsTrigger value="leads">1. Selecionar Leads</TabsTrigger>
+                  <TabsTrigger value="leads">1. Selecionar Empresas</TabsTrigger>
                   <TabsTrigger value="message">2. Escrever Mensagem</TabsTrigger>
                   <TabsTrigger value="review">3. Revisar e Enviar</TabsTrigger>
                 </TabsList>
@@ -196,15 +207,15 @@ const NewCampaign = () => {
                   </div>
                   
                   <div className="bg-white rounded-md border">
-                    {isLeadsLoading ? (
+                    {isEmpresasLoading ? (
                       <div className="flex flex-col items-center justify-center py-12">
                         <Loader2 className="h-8 w-8 animate-spin text-blue-600 mb-2" />
-                        <p className="text-gray-500">Carregando leads...</p>
+                        <p className="text-gray-500">Carregando empresas...</p>
                       </div>
-                    ) : filteredLeads?.length === 0 ? (
+                    ) : filteredEmpresas?.length === 0 ? (
                       <div className="flex flex-col items-center justify-center py-12">
                         <Users className="h-12 w-12 text-gray-300 mb-2" />
-                        <p className="text-gray-500">Nenhum lead encontrado</p>
+                        <p className="text-gray-500">Nenhuma empresa encontrada</p>
                       </div>
                     ) : (
                       <div className="overflow-x-auto">
@@ -216,8 +227,8 @@ const NewCampaign = () => {
                                   <input 
                                     type="checkbox" 
                                     className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-4 w-4"
-                                    checked={filteredLeads?.length === selectedLeads.length && filteredLeads?.length > 0}
-                                    onChange={handleSelectAllLeads}
+                                    checked={filteredEmpresas?.length === selectedEmpresas.length && filteredEmpresas?.length > 0}
+                                    onChange={handleSelectAllEmpresas}
                                   />
                                 </div>
                               </th>
@@ -228,22 +239,30 @@ const NewCampaign = () => {
                             </tr>
                           </thead>
                           <tbody>
-                            {filteredLeads?.map((lead) => (
-                              <tr key={lead.id} className="border-b border-gray-200 hover:bg-gray-50">
+                            {filteredEmpresas?.map((empresa) => (
+                              <tr key={empresa.id} className="border-b border-gray-200 hover:bg-gray-50">
                                 <td className="py-3 px-4">
                                   <div className="flex items-center">
                                     <input 
                                       type="checkbox" 
                                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-4 w-4"
-                                      checked={selectedLeads.includes(lead.id)}
-                                      onChange={() => handleSelectLead(lead.id)}
+                                      checked={selectedEmpresas.includes(empresa.id)}
+                                      onChange={() => handleSelectEmpresa(empresa.id)}
                                     />
                                   </div>
                                 </td>
-                                <td className="py-3 px-4 font-medium">{lead.company_name}</td>
-                                <td className="py-3 px-4 text-gray-500">{lead.cnae_description || "Não especificado"}</td>
-                                <td className="py-3 px-4 text-gray-500">{lead.city || "Não especificado"}</td>
-                                <td className="py-3 px-4 text-gray-500">{lead.phone_number}</td>
+                                <td className="py-3 px-4 font-medium">
+                                  {empresa.nome_fantasia || empresa.razao_social}
+                                </td>
+                                <td className="py-3 px-4 text-gray-500">
+                                  {empresa.cnae_descricao || "Não especificado"}
+                                </td>
+                                <td className="py-3 px-4 text-gray-500">
+                                  {empresa.municipio || "Não especificado"}
+                                </td>
+                                <td className="py-3 px-4 text-gray-500">
+                                  {empresa.telefone_1 || "Não informado"}
+                                </td>
                               </tr>
                             ))}
                           </tbody>
@@ -254,9 +273,9 @@ const NewCampaign = () => {
                   
                   <div className="flex justify-between pt-4">
                     <p className="text-sm text-gray-500">
-                      {selectedLeads.length} leads selecionados
+                      {selectedEmpresas.length} empresas selecionadas
                     </p>
-                    <Button onClick={handleNextTab} className="gap-2" disabled={selectedLeads.length === 0}>
+                    <Button onClick={handleNextTab} className="gap-2" disabled={selectedEmpresas.length === 0}>
                       <span>Próximo</span>
                       <ChevronRight size={16} />
                     </Button>
@@ -265,37 +284,12 @@ const NewCampaign = () => {
                 
                 <TabsContent value="message" className="space-y-4">
                   <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="whatsapp-connection">Conexão WhatsApp</Label>
-                      <Select disabled={connections.length === 0}>
-                        <SelectTrigger>
-                          <SelectValue placeholder={isConnectionsLoading ? "Carregando..." : (connections.length === 0 ? "Nenhuma conexão disponível" : "Selecione uma conexão")} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {connections.map((connection) => (
-                            <SelectItem key={connection.id} value={connection.id}>
-                              {connection.name} {connection.status === 'connected' ? '(Conectado)' : '(Desconectado)'}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {connections.length === 0 && (
-                        <p className="text-sm text-amber-600 mt-1">
-                          Você precisa adicionar e conectar pelo menos uma conta de WhatsApp.
-                        </p>
-                      )}
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="message-template">Modelo de Mensagem</Label>
-                      <Select>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione um modelo ou crie uma nova mensagem" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="new">Criar nova mensagem</SelectItem>
-                        </SelectContent>
-                      </Select>
+                    <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+                      <h4 className="font-medium text-blue-800 mb-2">💡 Modo Simulado Ativo</h4>
+                      <p className="text-sm text-blue-700">
+                        Suas mensagens serão processadas e registradas, mas não enviadas via WhatsApp real. 
+                        Perfeito para testar o sistema antes de assinar um plano.
+                      </p>
                     </div>
                     
                     <div>
@@ -338,17 +332,17 @@ const NewCampaign = () => {
                               <dd className="mt-1 text-sm">{campaignName || "Não definido"}</dd>
                             </div>
                             <div>
-                              <dt className="text-sm font-medium text-gray-500">Total de Leads</dt>
+                              <dt className="text-sm font-medium text-gray-500">Total de Empresas</dt>
                               <dd className="mt-1 text-sm flex items-center">
                                 <Users size={14} className="mr-2" />
-                                {selectedLeads.length} leads selecionados
+                                {selectedEmpresas.length} empresas selecionadas
                               </dd>
                             </div>
                             <div>
-                              <dt className="text-sm font-medium text-gray-500">Agendamento</dt>
+                              <dt className="text-sm font-medium text-gray-500">Modo de Envio</dt>
                               <dd className="mt-1 text-sm flex items-center">
-                                <Calendar size={14} className="mr-2" />
-                                Envio imediato
+                                <Zap size={14} className="mr-2" />
+                                Simulado (para testes)
                               </dd>
                             </div>
                           </dl>
@@ -364,7 +358,7 @@ const NewCampaign = () => {
                             <p className="text-sm whitespace-pre-line">{message}</p>
                           </div>
                           <p className="text-xs text-gray-500 mt-2">
-                            * Esta é uma prévia. As variáveis serão substituídas pelos dados dos leads no envio.
+                            * Esta é uma prévia. As variáveis serão substituídas pelos dados das empresas no envio.
                           </p>
                         </CardContent>
                       </Card>
@@ -372,22 +366,22 @@ const NewCampaign = () => {
                     
                     <Card>
                       <CardHeader className="pb-2">
-                        <CardTitle className="text-base">Resumo dos Leads</CardTitle>
+                        <CardTitle className="text-base">Resumo das Empresas</CardTitle>
                       </CardHeader>
                       <CardContent>
                         <p className="text-sm mb-2">
-                          <span className="font-medium">{selectedLeads.length}</span> leads selecionados
+                          <span className="font-medium">{selectedEmpresas.length}</span> empresas selecionadas
                         </p>
                         <div className="bg-gray-100 p-4 rounded-md max-h-40 overflow-y-auto">
                           <ul className="text-sm space-y-1">
-                            {isLeadsLoading ? (
+                            {isEmpresasLoading ? (
                               <p>Carregando...</p>
                             ) : (
-                              leads?.filter(lead => selectedLeads.includes(lead.id))
-                                .map(lead => (
-                                  <li key={lead.id} className="flex items-center">
+                              empresas?.filter(empresa => selectedEmpresas.includes(empresa.id))
+                                .map(empresa => (
+                                  <li key={empresa.id} className="flex items-center">
                                     <Check size={12} className="text-green-500 mr-2" />
-                                    {lead.company_name} - {lead.phone_number}
+                                    {empresa.nome_fantasia || empresa.razao_social} - {empresa.telefone_1}
                                   </li>
                                 ))
                             )}
@@ -402,13 +396,13 @@ const NewCampaign = () => {
                       Voltar
                     </Button>
                     <Button 
-                      onClick={handleCreateCampaign} 
-                      disabled={isAddingCampaign || !campaignName.trim() || !message.trim() || selectedLeads.length === 0}
+                      onClick={handleCreateAndStartCampaign} 
+                      disabled={isStartingCampaign || !campaignName.trim() || !message.trim() || selectedEmpresas.length === 0}
                       className="gap-2"
                     >
-                      {isAddingCampaign && <Loader2 className="h-4 w-4 animate-spin" />}
+                      {isStartingCampaign && <Loader2 className="h-4 w-4 animate-spin" />}
                       <Send size={16} />
-                      <span>Criar Campanha</span>
+                      <span>Criar e Iniciar Campanha</span>
                     </Button>
                   </div>
                 </TabsContent>

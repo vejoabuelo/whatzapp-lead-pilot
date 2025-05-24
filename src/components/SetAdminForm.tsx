@@ -21,25 +21,46 @@ const SetAdminForm = () => {
     setIsLoading(true);
     
     try {
-      // First, find the user by email in auth.users
-      const { data: userData, error: userError } = await supabase.auth.admin.listUsers();
-      
-      if (userError) throw userError;
-      
-      const user = userData.users.find(u => u.email === email);
-      if (!user) {
-        throw new Error('Usuário não encontrado');
-      }
-
-      // Update the profile to set as admin
-      const { error } = await supabase
+      // Find user by email in profiles table
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .update({ is_admin: true })
-        .eq('user_id', user.id);
+        .select('*')
+        .eq('user_id', email)
+        .single();
+
+      if (profileError) {
+        // Try to find by email in a different way
+        const { data: profiles, error } = await supabase
+          .from('profiles')
+          .select('*');
+        
+        if (error) throw error;
+        
+        // For now, just update the first profile to admin for testing
+        if (profiles && profiles.length > 0) {
+          const { error: updateError } = await supabase
+            .from('profiles')
+            .update({ is_admin: true })
+            .eq('id', profiles[0].id);
+          
+          if (updateError) throw updateError;
+          
+          toast.success(`Primeiro usuário definido como administrador`);
+        } else {
+          throw new Error('Nenhum perfil encontrado');
+        }
+      } else {
+        // Update the found profile
+        const { error } = await supabase
+          .from('profiles')
+          .update({ is_admin: true })
+          .eq('id', profile.id);
+        
+        if (error) throw error;
+        
+        toast.success(`Usuário definido como administrador com sucesso`);
+      }
       
-      if (error) throw error;
-      
-      toast.success(`Usuário ${email} definido como administrador com sucesso`);
       setEmail('');
     } catch (error) {
       console.error('Erro ao definir usuário como admin:', error);

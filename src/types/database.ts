@@ -46,20 +46,37 @@ export interface UserPlan {
   updated_at: string;
 }
 
-export interface Lead {
+export interface Empresa {
   id: string;
-  user_id: string;
-  cnpj: string | null;
-  company_name: string;
-  phone: string;
+  cnpj_basico: string;
+  razao_social: string;
+  nome_fantasia: string | null;
+  tem_dados_empresa: string;
+  tem_dados_socio: string;
+  natureza_juridica: string;
+  porte: number;
+  capital_social: string;
+  tipo_logradouro: string | null;
+  logradouro: string | null;
+  numero: string | null;
+  complemento: string | null;
+  bairro: string | null;
+  cep: string | null;
+  codigo_municipio: number | null;
+  municipio: string | null;
+  uf: string | null;
+  telefone_1: string | null;
+  telefone_2: string | null;
   email: string | null;
-  city: string | null;
-  state: string | null;
-  cnae_code: string | null;
-  cnae_description: string | null;
-  opening_date: string | null;
-  capital_social: number | null;
-  company_status: string;
+  cnae_fiscal: number | null;
+  cnae_descricao: string | null;
+  cnae_fiscal_secundario: string | null;
+  data_inicio_atividade: string | null;
+  codigo_situacao_cadastral: number;
+  situacao_cadastral: string;
+  data_situacao_cadastral: string | null;
+  motivo_situacao_cadastral: number | null;
+  identificador_matriz_filial: number;
   has_whatsapp: boolean;
   status: string;
   created_at: string;
@@ -86,9 +103,8 @@ export interface Campaign {
 export interface CampaignLead {
   id: string;
   campaign_id: string;
-  lead_id: string;
+  empresa_id: string;
   message_template_id: string | null;
-  whatsapp_connection_id: string | null;
   status: string;
   sent_message: string | null;
   sent_at: string | null;
@@ -124,7 +140,6 @@ export interface MessageTemplate {
 export interface WhatsappConnection {
   id: string;
   user_id: string;
-  instance_id: string | null;
   name: string;
   status: string;
   phone_number: string | null;
@@ -138,7 +153,7 @@ export interface WhatsappConnection {
 export interface LeadTag {
   id: string;
   user_id: string;
-  lead_id: string;
+  empresa_id: string;
   tag: string;
   notes: string | null;
   created_at: string;

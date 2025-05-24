@@ -9,7 +9,7 @@ type TableName =
   | 'plans' 
   | 'user_plans'
   | 'target_preferences'
-  | 'leads'
+  | 'empresas'
   | 'campaigns'
   | 'message_categories'
   | 'message_templates'
@@ -61,7 +61,7 @@ export function useSupabaseData<T>(
     }
   };
 
-  const addItem = async (item: Partial<T>) => {
+  const addItem = async (item: any) => {
     try {
       const { data: result, error } = await supabase
         .from(tableName)
@@ -80,7 +80,7 @@ export function useSupabaseData<T>(
     }
   };
 
-  const updateItem = async (id: string, updates: Partial<T>) => {
+  const updateItem = async (id: string, updates: any) => {
     try {
       const { data: result, error } = await supabase
         .from(tableName)

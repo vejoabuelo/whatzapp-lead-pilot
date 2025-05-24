@@ -1,12 +1,15 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import Sidebar from "@/components/dashboard/Sidebar";
 import { useSupabaseData } from "@/hooks/useSupabaseData";
 import { useAuth } from "@/providers/AuthProvider";
 import { Campaign } from "@/types/database";
+import { generateSimulatedReport } from "@/services/whatsappService";
 import { Link } from "react-router-dom";
 import { 
   ArrowLeft, 
@@ -20,7 +23,10 @@ import {
   Calendar,
   Clock,
   MoreHorizontal,
-  Loader2
+  Loader2,
+  Zap,
+  Eye,
+  BarChart3
 } from "lucide-react";
 
 const Campaigns = () => {
@@ -70,6 +76,26 @@ const Campaigns = () => {
     }
   };
 
+  const handleViewReport = (campaign: Campaign) => {
+    const report = generateSimulatedReport(campaign);
+    
+    // Mostrar relatório em modal ou toast
+    const reportText = `
+📊 Relatório da Campanha: ${campaign.name}
+
+📱 Número Usado: ${report.simulatedNumber}
+📧 Total de Mensagens: ${report.totalMessages}
+✅ Mensagens Enviadas: ${report.sentMessages}
+📈 Taxa de Sucesso: ${report.successRate}%
+💬 Taxa de Resposta: ${report.responseRate}%
+⏰ Data/Hora: ${report.timestamp}
+
+⚠️ Este é um relatório simulado para demonstração.
+    `;
+    
+    alert(reportText);
+  };
+
   return (
     <div className="flex h-screen bg-gray-50">
       <Sidebar />
@@ -83,6 +109,10 @@ const Campaigns = () => {
                 </Link>
               </Button>
               <h1 className="text-2xl font-semibold text-gray-800 ml-2">Campanhas</h1>
+              <Badge variant="secondary" className="ml-4 gap-2">
+                <Zap size={14} />
+                Modo Simulado
+              </Badge>
             </div>
             <div className="flex items-center space-x-4">
               <Button variant="outline" size="sm" className="gap-2" onClick={() => fetchCampaigns()}>
@@ -103,7 +133,9 @@ const Campaigns = () => {
           <Card className="mb-6">
             <CardHeader className="pb-0">
               <CardTitle>Gerenciamento de Campanhas</CardTitle>
-              <CardDescription>Crie e gerencie suas campanhas de mensagens</CardDescription>
+              <CardDescription>
+                Crie e gerencie suas campanhas de mensagens. Todas as campanhas são executadas em modo simulado para demonstração.
+              </CardDescription>
             </CardHeader>
             <CardContent className="pt-6">
               <div className="flex flex-col sm:flex-row gap-4">
@@ -156,8 +188,9 @@ const Campaigns = () => {
                       <thead>
                         <tr className="border-b border-gray-200">
                           <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-3 px-4">Nome</th>
-                          <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-3 px-4">Data de Criação</th>
-                          <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-3 px-4">Agendamento</th>
+                          <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-3 px-4">Criada em</th>
+                          <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-3 px-4">Empresas</th>
+                          <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-3 px-4">Enviadas</th>
                           <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-3 px-4">Status</th>
                           <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-3 px-4">Ações</th>
                         </tr>
@@ -170,14 +203,15 @@ const Campaigns = () => {
                               {campaign.created_at ? new Date(campaign.created_at).toLocaleDateString('pt-BR') : "N/A"}
                             </td>
                             <td className="py-3 px-4 text-gray-500">
-                              {campaign.scheduled_for ? (
-                                <div className="flex items-center">
-                                  <Calendar size={14} className="mr-1" />
-                                  <span>{new Date(campaign.scheduled_for).toLocaleDateString('pt-BR')}</span>
-                                  <Clock size={14} className="ml-2 mr-1" />
-                                  <span>{new Date(campaign.scheduled_for).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
-                                </div>
-                              ) : "Não agendada"}
+                              {campaign.total_leads || 0}
+                            </td>
+                            <td className="py-3 px-4 text-gray-500">
+                              {campaign.sent_count || 0}
+                              {campaign.success_count && campaign.sent_count ? (
+                                <span className="ml-2 text-green-600">
+                                  ({Math.round((campaign.success_count / campaign.sent_count) * 100)}% sucesso)
+                                </span>
+                              ) : null}
                             </td>
                             <td className="py-3 px-4">
                               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeClass(campaign.status)}`}>
@@ -186,21 +220,20 @@ const Campaigns = () => {
                             </td>
                             <td className="py-3 px-4">
                               <div className="flex items-center space-x-2">
-                                {campaign.status === 'active' && (
-                                  <Button variant="ghost" size="icon" className="h-8 w-8" title="Pausar">
-                                    <Pause size={16} />
+                                {campaign.status === 'completed' && (
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-8 w-8" 
+                                    title="Ver Relatório"
+                                    onClick={() => handleViewReport(campaign)}
+                                  >
+                                    <BarChart3 size={16} />
                                   </Button>
                                 )}
-                                {campaign.status === 'paused' && (
-                                  <Button variant="ghost" size="icon" className="h-8 w-8" title="Continuar">
-                                    <Play size={16} />
-                                  </Button>
-                                )}
-                                {campaign.status === 'draft' && (
-                                  <Button variant="ghost" size="icon" className="h-8 w-8" title="Iniciar">
-                                    <Play size={16} />
-                                  </Button>
-                                )}
+                                <Button variant="ghost" size="icon" className="h-8 w-8" title="Ver Detalhes">
+                                  <Eye size={16} />
+                                </Button>
                                 <Button variant="ghost" size="icon" className="h-8 w-8">
                                   <MoreHorizontal size={16} />
                                 </Button>
@@ -235,7 +268,10 @@ const Campaigns = () => {
             
             <TabsContent value="completed" className="mt-0">
               <div className="bg-white rounded-md border p-8 text-center text-gray-500">
-                Sem campanhas concluídas para exibir
+                {filteredCampaigns?.filter(c => c.status === 'completed').length === 0 
+                  ? "Sem campanhas concluídas para exibir"
+                  : "Use a aba 'Todas' para ver campanhas concluídas"
+                }
               </div>
             </TabsContent>
           </Tabs>
