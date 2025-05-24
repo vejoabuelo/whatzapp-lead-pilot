@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -72,7 +71,7 @@ const NewCampaign = () => {
     if (filteredEmpresas?.length === selectedEmpresas.length) {
       setSelectedEmpresas([]);
     } else {
-      setSelectedEmpresas(filteredEmpresas?.map(empresa => empresa.id) || []);
+      setSelectedEmpresas(filteredEmpresas?.map(empresa => empresa.id || '') || []);
     }
   };
 

@@ -30,15 +30,15 @@ export function useWhatsappConnections() {
     }
   };
 
-  const addConnection = async (connectionData: Partial<WhatsappConnection>) => {
+  const addConnection = async (connectionData?: Partial<WhatsappConnection>) => {
     if (!user) return;
 
     try {
       const { data, error } = await supabase
         .from('whatsapp_connections')
         .insert({
-          ...connectionData,
           user_id: user.id,
+          name: connectionData?.name || `WhatsApp ${new Date().toLocaleString()}`,
           status: 'disconnected'
         })
         .select()
@@ -76,6 +76,10 @@ export function useWhatsappConnections() {
     }
   };
 
+  const updateConnectionName = async (id: string, name: string) => {
+    return updateConnection(id, { name });
+  };
+
   const deleteConnection = async (id: string) => {
     try {
       const { error } = await supabase
@@ -106,6 +110,7 @@ export function useWhatsappConnections() {
     fetchConnections,
     addConnection,
     updateConnection,
+    updateConnectionName,
     deleteConnection
   };
 }

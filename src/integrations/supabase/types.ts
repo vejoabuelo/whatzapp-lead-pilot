@@ -140,6 +140,102 @@ export type Database = {
         }
         Relationships: []
       }
+      empresas: {
+        Row: {
+          bairro: string | null
+          capital_social: string | null
+          cep: string | null
+          cnae_descricao: string | null
+          cnae_fiscal: number | null
+          cnae_fiscal_secundario: string | null
+          cnpj_basico: string | null
+          codigo_municipio: number | null
+          codigo_situacao_cadastral: number | null
+          complemento: string | null
+          data_inicio_atividade: string | null
+          data_situacao_cadastral: string | null
+          email: string | null
+          identificador_matriz_filial: number | null
+          logradouro: string | null
+          motivo_situacao_cadastral: number | null
+          municipio: string | null
+          natureza_juridica: string | null
+          nome_fantasia: string | null
+          numero: string | null
+          porte: number | null
+          razao_social: string | null
+          situacao_cadastral: string | null
+          telefone_1: string | null
+          telefone_2: string | null
+          tem_dados_empresa: string | null
+          tem_dados_socio: string | null
+          tipo_logradouro: string | null
+          uf: string | null
+        }
+        Insert: {
+          bairro?: string | null
+          capital_social?: string | null
+          cep?: string | null
+          cnae_descricao?: string | null
+          cnae_fiscal?: number | null
+          cnae_fiscal_secundario?: string | null
+          cnpj_basico?: string | null
+          codigo_municipio?: number | null
+          codigo_situacao_cadastral?: number | null
+          complemento?: string | null
+          data_inicio_atividade?: string | null
+          data_situacao_cadastral?: string | null
+          email?: string | null
+          identificador_matriz_filial?: number | null
+          logradouro?: string | null
+          motivo_situacao_cadastral?: number | null
+          municipio?: string | null
+          natureza_juridica?: string | null
+          nome_fantasia?: string | null
+          numero?: string | null
+          porte?: number | null
+          razao_social?: string | null
+          situacao_cadastral?: string | null
+          telefone_1?: string | null
+          telefone_2?: string | null
+          tem_dados_empresa?: string | null
+          tem_dados_socio?: string | null
+          tipo_logradouro?: string | null
+          uf?: string | null
+        }
+        Update: {
+          bairro?: string | null
+          capital_social?: string | null
+          cep?: string | null
+          cnae_descricao?: string | null
+          cnae_fiscal?: number | null
+          cnae_fiscal_secundario?: string | null
+          cnpj_basico?: string | null
+          codigo_municipio?: number | null
+          codigo_situacao_cadastral?: number | null
+          complemento?: string | null
+          data_inicio_atividade?: string | null
+          data_situacao_cadastral?: string | null
+          email?: string | null
+          identificador_matriz_filial?: number | null
+          logradouro?: string | null
+          motivo_situacao_cadastral?: number | null
+          municipio?: string | null
+          natureza_juridica?: string | null
+          nome_fantasia?: string | null
+          numero?: string | null
+          porte?: number | null
+          razao_social?: string | null
+          situacao_cadastral?: string | null
+          telefone_1?: string | null
+          telefone_2?: string | null
+          tem_dados_empresa?: string | null
+          tem_dados_socio?: string | null
+          tipo_logradouro?: string | null
+          uf?: string | null
+        }
+        Relationships: []
+      }
       lead_tags: {
         Row: {
           created_at: string

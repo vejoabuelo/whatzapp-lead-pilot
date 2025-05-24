@@ -10,6 +10,7 @@ type TableName =
   | 'user_plans'
   | 'target_preferences'
   | 'empresas'
+  | 'leads'
   | 'campaigns'
   | 'message_categories'
   | 'message_templates'
@@ -41,7 +42,7 @@ export function useSupabaseData<T>(
     setError(null);
 
     try {
-      let query = supabase.from(tableName).select('*');
+      let query = supabase.from(tableName as any).select('*');
       
       if (options?.queryFilter) {
         query = options.queryFilter(query);
@@ -64,7 +65,7 @@ export function useSupabaseData<T>(
   const addItem = async (item: any) => {
     try {
       const { data: result, error } = await supabase
-        .from(tableName)
+        .from(tableName as any)
         .insert(item)
         .select();
 
@@ -83,7 +84,7 @@ export function useSupabaseData<T>(
   const updateItem = async (id: string, updates: any) => {
     try {
       const { data: result, error } = await supabase
-        .from(tableName)
+        .from(tableName as any)
         .update(updates)
         .eq('id', id)
         .select();
@@ -103,7 +104,7 @@ export function useSupabaseData<T>(
   const deleteItem = async (id: string) => {
     try {
       const { error } = await supabase
-        .from(tableName)
+        .from(tableName as any)
         .delete()
         .eq('id', id);
 
