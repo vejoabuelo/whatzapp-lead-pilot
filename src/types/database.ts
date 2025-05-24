@@ -1,3 +1,4 @@
+
 export interface Profile {
   id: string;
   user_id: string;
@@ -48,8 +49,18 @@ export interface UserPlan {
 export interface Lead {
   id: string;
   user_id: string;
-  name: string;
+  cnpj: string | null;
+  company_name: string;
   phone: string;
+  email: string | null;
+  city: string | null;
+  state: string | null;
+  cnae_code: string | null;
+  cnae_description: string | null;
+  opening_date: string | null;
+  capital_social: number | null;
+  company_status: string;
+  has_whatsapp: boolean;
   status: string;
   created_at: string;
   updated_at: string;
@@ -59,7 +70,15 @@ export interface Campaign {
   id: string;
   user_id: string;
   name: string;
-  status: 'draft' | 'active' | 'paused' | 'completed';
+  description: string | null;
+  status: 'draft' | 'active' | 'paused' | 'completed' | 'cancelled';
+  total_leads: number;
+  sent_count: number;
+  success_count: number;
+  failed_count: number;
+  response_count: number;
+  started_at: string | null;
+  completed_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -69,10 +88,10 @@ export interface CampaignLead {
   campaign_id: string;
   lead_id: string;
   message_template_id: string | null;
+  whatsapp_connection_id: string | null;
   status: string;
   sent_message: string | null;
   sent_at: string | null;
-  whatsapp_connection_id: string | null;
   error_message: string | null;
   has_response: boolean | null;
   response_at: string | null;
@@ -86,6 +105,7 @@ export interface MessageCategory {
   user_id: string;
   name: string;
   description: string | null;
+  segment: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -94,6 +114,9 @@ export interface MessageTemplate {
   id: string;
   category_id: string;
   content: string;
+  variables_used: string[] | null;
+  usage_count: number;
+  response_rate: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -101,12 +124,13 @@ export interface MessageTemplate {
 export interface WhatsappConnection {
   id: string;
   user_id: string;
+  instance_id: string | null;
   name: string;
   status: string;
-  instance_id: string | null;
-  api_key: string | null;
+  phone_number: string | null;
   connected_at: string | null;
   last_used_at: string | null;
+  error_message: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -116,6 +140,7 @@ export interface LeadTag {
   user_id: string;
   lead_id: string;
   tag: string;
+  notes: string | null;
   created_at: string;
   updated_at: string;
 }

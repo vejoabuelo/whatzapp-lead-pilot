@@ -1,152 +1,147 @@
 
-import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building, TrendingUp, Search } from 'lucide-react';
-import { useSupabaseData } from '@/hooks/useSupabaseData';
-import { Lead } from '@/types/database';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { useNavigate } from 'react-router-dom';
+import { Building2, MapPin, Calendar, TrendingUp, Eye } from 'lucide-react';
+import { Lead } from '@/types/database';
 
 export const LeadInsights = () => {
-  const navigate = useNavigate();
-  const [recentLeads, setRecentLeads] = useState<Lead[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  
-  const { data: leads, isLoading: leadsLoading } = useSupabaseData<Lead>('leads', { 
-    fetchOnMount: true,
-    queryFilter: (query) => query.order('created_at', { ascending: false }).limit(5)
-  });
-  
-  useEffect(() => {
-    if (leads) {
-      setRecentLeads(leads);
-      setIsLoading(false);
+  // Mock data - this would come from your database
+  const newLeadsToday: Lead[] = [
+    {
+      id: '1',
+      user_id: 'user1',
+      cnpj: '12.345.678/0001-90',
+      company_name: 'Restaurante Sabor Mineiro',
+      phone: '+5511999887766',
+      email: 'contato@sabormineiro.com.br',
+      city: 'São Paulo',
+      state: 'SP',
+      cnae_code: '5611-2',
+      cnae_description: 'Restaurantes e similares',
+      opening_date: '2024-01-15T00:00:00Z',
+      capital_social: 150000,
+      company_status: 'active',
+      has_whatsapp: true,
+      status: 'new',
+      created_at: '2024-01-15T10:30:00Z',
+      updated_at: '2024-01-15T10:30:00Z'
+    },
+    {
+      id: '2',
+      user_id: 'user1',
+      cnpj: '98.765.432/0001-01',
+      company_name: 'Clínica Veterinária Pet Care',
+      phone: '+5511888776655',
+      email: 'contato@petcare.vet.br',
+      city: 'Rio de Janeiro',
+      state: 'RJ',
+      cnae_code: '7500-1',
+      cnae_description: 'Atividades veterinárias',
+      opening_date: '2024-01-14T00:00:00Z',
+      capital_social: 80000,
+      company_status: 'active',
+      has_whatsapp: true,
+      status: 'new',
+      created_at: '2024-01-14T14:20:00Z',
+      updated_at: '2024-01-14T14:20:00Z'
     }
-  }, [leads]);
-  
-  const getOpeningDate = (date: string | null) => {
-    if (!date) return 'Data não disponível';
-    
-    const openingDate = new Date(date);
-    const now = new Date();
-    const diffDays = Math.floor((now.getTime() - openingDate.getTime()) / (1000 * 60 * 60 * 24));
-    
-    if (diffDays === 0) return 'Aberta hoje';
-    if (diffDays === 1) return 'Aberta ontem';
-    if (diffDays < 7) return `Aberta há ${diffDays} dias`;
-    if (diffDays < 30) return `Aberta há ${Math.floor(diffDays / 7)} semanas`;
-    return `Aberta há ${Math.floor(diffDays / 30)} meses`;
-  };
-  
-  // Simulated top segments
-  const topSegments = [
-    { name: 'Restaurantes', count: 834, percentage: 34 },
-    { name: 'Clínicas', count: 621, percentage: 26 },
-    { name: 'Lojas de Varejo', count: 549, percentage: 22 },
-    { name: 'Academias', count: 276, percentage: 11 }
+  ];
+
+  const insights = [
+    {
+      title: 'Leads Disponíveis Hoje',
+      value: '3.218',
+      change: '+124 novos',
+      icon: Building2,
+      color: 'text-blue-600'
+    },
+    {
+      title: 'Segmento em Alta',
+      value: 'Restaurantes',
+      change: '+18% esta semana',
+      icon: TrendingUp,
+      color: 'text-green-600'
+    },
+    {
+      title: 'Região com Mais Oportunidades',
+      value: 'São Paulo - SP',
+      change: '847 novos leads',
+      icon: MapPin,
+      color: 'text-purple-600'
+    }
   ];
 
   return (
-    <div className="grid gap-6 md:grid-cols-2">
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-lg font-medium">Empresas Recentes</CardTitle>
-        </CardHeader>
-        <CardContent className="p-4">
-          {isLoading ? (
-            <div className="space-y-4">
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="animate-pulse flex items-start gap-3 p-3 bg-muted rounded-md">
-                  <div className="w-10 h-10 bg-muted-foreground/20 rounded-md"></div>
-                  <div className="flex-1">
-                    <div className="h-4 bg-muted-foreground/20 rounded w-3/4 mb-2"></div>
-                    <div className="h-3 bg-muted-foreground/20 rounded w-1/2 mb-2"></div>
-                    <div className="h-3 bg-muted-foreground/20 rounded w-1/4"></div>
-                  </div>
+    <div className="space-y-4">
+      {/* Quick Insights */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {insights.map((insight, index) => (
+          <Card key={index} className="overflow-hidden">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-full bg-primary/10`}>
+                  <insight.icon className={`h-5 w-5 ${insight.color}`} />
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {recentLeads.map((lead) => (
-                <div key={lead.id} className="flex items-start gap-3 p-3 bg-muted/20 rounded-md hover:bg-muted/30 transition-colors">
-                  <div className="w-10 h-10 bg-primary/10 rounded-md flex items-center justify-center flex-shrink-0">
-                    <Building size={20} className="text-primary" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate" title={lead.company_name}>
-                      {lead.company_name}
-                    </p>
-                    <div className="flex items-center mt-1 flex-wrap">
-                      <span className="text-xs text-muted-foreground truncate max-w-[150px]" title={lead.cnae_description || ''}>
-                        {lead.cnae_description || 'Sem descrição'}
-                      </span>
-                      <span className="mx-1 text-gray-300">•</span>
-                      <span className="text-xs text-muted-foreground">{lead.city}</span>
-                    </div>
-                    <div className="mt-1">
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
-                        {getOpeningDate(lead.opening_date)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-              
-              <Button 
-                variant="outline" 
-                className="w-full mt-2 flex items-center gap-2"
-                onClick={() => navigate('/prospection')}
-              >
-                <Search size={16} />
-                Ver mais empresas
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-      
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-lg font-medium">Leads por Segmento</CardTitle>
-        </CardHeader>
-        <CardContent className="p-4">
-          <div className="space-y-4">
-            {topSegments.map((segment) => (
-              <div key={segment.name}>
-                <div className="flex justify-between items-center mb-1">
-                  <span className="text-sm">{segment.name}</span>
-                  <span className="text-sm font-medium">{segment.count}</span>
-                </div>
-                <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
-                  <div 
-                    className={`h-full rounded-full ${
-                      segment.name === 'Restaurantes' ? 'bg-blue-500' :
-                      segment.name === 'Clínicas' ? 'bg-green-500' :
-                      segment.name === 'Lojas de Varejo' ? 'bg-purple-500' :
-                      'bg-yellow-500'
-                    }`} 
-                    style={{ width: `${segment.percentage}%` }}
-                  ></div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-muted-foreground">{insight.title}</p>
+                  <p className="text-lg font-bold truncate">{insight.value}</p>
+                  <p className="text-xs text-green-600">{insight.change}</p>
                 </div>
               </div>
-            ))}
-            
-            <div className="pt-4 mt-2 border-t border-border">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium">Total de Leads</p>
-                <p className="text-sm font-medium">2,458</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* New Leads Today */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg">Novos Leads Hoje</CardTitle>
+            <Badge variant="secondary">{newLeadsToday.length} leads</Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {newLeadsToday.map((lead) => (
+            <div key={lead.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <h4 className="font-medium truncate">{lead.company_name}</h4>
+                  {lead.has_whatsapp && (
+                    <Badge variant="outline" className="text-green-600 border-green-200">
+                      WhatsApp ✓
+                    </Badge>
+                  )}
+                </div>
+                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <Building2 className="h-3 w-3" />
+                    {lead.cnae_description || 'N/A'}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <MapPin className="h-3 w-3" />
+                    {lead.city || 'N/A'}
+                  </span>
+                  {lead.opening_date && (
+                    <span className="flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
+                      Aberta há {Math.floor((new Date().getTime() - new Date(lead.opening_date).getTime()) / (1000 * 60 * 60 * 24))} dias
+                    </span>
+                  )}
+                </div>
               </div>
-              
-              <Button 
-                variant="outline" 
-                className="w-full mt-4 flex items-center gap-2"
-                onClick={() => navigate('/prospection')}
-              >
-                <TrendingUp size={16} />
-                Explorar Segmentos
+              <Button size="sm" variant="outline">
+                <Eye className="h-4 w-4 mr-1" />
+                Ver Detalhes
               </Button>
             </div>
+          ))}
+          
+          <div className="pt-2">
+            <Button variant="outline" className="w-full">
+              Ver Todos os Leads Disponíveis ({newLeadsToday.length + 3216} total)
+            </Button>
           </div>
         </CardContent>
       </Card>

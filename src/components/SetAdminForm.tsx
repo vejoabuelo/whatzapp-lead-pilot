@@ -21,9 +21,21 @@ const SetAdminForm = () => {
     setIsLoading(true);
     
     try {
-      const { error } = await supabase.rpc('set_admin_user', { 
-        user_email: email 
-      });
+      // First, find the user by email in auth.users
+      const { data: userData, error: userError } = await supabase.auth.admin.listUsers();
+      
+      if (userError) throw userError;
+      
+      const user = userData.users.find(u => u.email === email);
+      if (!user) {
+        throw new Error('Usuário não encontrado');
+      }
+
+      // Update the profile to set as admin
+      const { error } = await supabase
+        .from('profiles')
+        .update({ is_admin: true })
+        .eq('user_id', user.id);
       
       if (error) throw error;
       

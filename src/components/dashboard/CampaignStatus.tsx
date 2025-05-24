@@ -1,187 +1,121 @@
 
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Play, Pause, Clock, AlertTriangle, Send, Loader2, BarChart2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { useSupabaseData } from '@/hooks/useSupabaseData';
-import { Campaign } from '@/types/database';
-import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { Play, Pause, RotateCcw, AlertCircle } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+
+interface Campaign {
+  id: string;
+  name: string;
+  status: 'draft' | 'active' | 'paused' | 'completed' | 'cancelled';
+  sent_count: number;
+  total_leads: number;
+  success_count: number;
+  failed_count: number;
+}
 
 export const CampaignStatus = () => {
-  const navigate = useNavigate();
-  const [activeCampaign, setActiveCampaign] = useState<Campaign | null>(null);
-  const [progress, setProgress] = useState(0);
-  const [remainingTime, setRemainingTime] = useState('');
-  const [lastLead, setLastLead] = useState({
-    company: 'Carregando...',
-    message: 'Carregando...',
-  });
-
-  const { 
-    data: campaigns,
-    isLoading, 
-    error 
-  } = useSupabaseData<Campaign>('campaigns', {
-    fetchOnMount: true,
-    queryFilter: (query) => query.eq('status', 'active').limit(1)
-  });
-
-  useEffect(() => {
-    if (campaigns && campaigns.length > 0) {
-      setActiveCampaign(campaigns[0]);
-      // Simulação de progresso e tempo
-      const randomProgress = Math.floor(Math.random() * 80) + 10;
-      setProgress(randomProgress);
-      
-      const minutes = Math.floor(Math.random() * 30) + 5;
-      const seconds = Math.floor(Math.random() * 60);
-      setRemainingTime(`${minutes}min ${seconds}s`);
-      
-      // Simulação do último lead
-      setLastLead({
-        company: 'Restaurante Sabor Caseiro',
-        message: 'Olá Restaurante Sabor Caseiro! Vi que vocês abriram recentemente em São Paulo. Nosso sistema de gestão é ideal para restaurantes, com módulos de pedidos, controle de estoque e delivery. Podemos conversar sobre como otimizar a operação?'
-      });
-    }
-  }, [campaigns]);
-
-  const handlePauseResume = () => {
-    if (!activeCampaign) return;
-    
-    // Simulação de pausa/retomada
-    const newStatus = activeCampaign.status === 'active' ? 'paused' : 'active';
-    
-    toast.success(newStatus === 'active' ? 'Campanha retomada' : 'Campanha pausada');
-    setActiveCampaign({
-      ...activeCampaign,
-      status: newStatus as 'active' | 'paused' | 'draft' | 'completed'
-    });
+  // Mock data - this would come from your database
+  const activeCampaign: Campaign = {
+    id: '1',
+    name: 'Campanha Restaurantes - Dezembro',
+    status: 'active',
+    sent_count: 847,
+    total_leads: 1200,
+    success_count: 823,
+    failed_count: 24
   };
 
-  if (isLoading) {
-    return (
-      <Card className="mb-6 overflow-hidden">
-        <CardHeader className="bg-muted/30">
-          <CardTitle className="flex items-center text-lg font-medium">
-            <Send className="mr-2 h-5 w-5" />
-            Carregando campanhas...
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-6 flex justify-center items-center h-40">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </CardContent>
-      </Card>
-    );
-  }
+  const progressPercentage = (activeCampaign.sent_count / activeCampaign.total_leads) * 100;
 
-  if (error) {
-    return (
-      <Card className="mb-6 overflow-hidden">
-        <CardHeader className="bg-destructive/10">
-          <CardTitle className="flex items-center text-lg font-medium">
-            <AlertTriangle className="mr-2 h-5 w-5 text-destructive" />
-            Erro ao carregar campanhas
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-6">
-          <p className="mb-4 text-muted-foreground">
-            Não conseguimos carregar suas campanhas ativas. Por favor, tente novamente.
-          </p>
-          <Button onClick={() => window.location.reload()}>Recarregar</Button>
-        </CardContent>
-      </Card>
-    );
-  }
+  const getStatusColor = (status: Campaign['status']) => {
+    switch (status) {
+      case 'active': return 'bg-green-500';
+      case 'paused': return 'bg-yellow-500';
+      case 'completed': return 'bg-blue-500';
+      case 'cancelled': return 'bg-red-500';
+      default: return 'bg-gray-500';
+    }
+  };
 
-  if (!activeCampaign) {
-    return (
-      <Card className="mb-6 overflow-hidden">
-        <CardHeader className="bg-muted/30">
-          <CardTitle className="flex items-center text-lg font-medium">
-            <Send className="mr-2 h-5 w-5" />
-            Nenhuma campanha ativa
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-6">
-          <p className="mb-4 text-muted-foreground">
-            Você não tem nenhuma campanha ativa no momento. Crie uma nova campanha para começar.
-          </p>
-          <Button onClick={() => navigate('/campaigns/new')}>
-            Criar Nova Campanha
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
+  const getStatusText = (status: Campaign['status']) => {
+    switch (status) {
+      case 'active': return 'Ativa';
+      case 'paused': return 'Pausada';
+      case 'completed': return 'Concluída';
+      case 'cancelled': return 'Cancelada';
+      default: return 'Rascunho';
+    }
+  };
 
   return (
-    <Card className="mb-6 overflow-hidden">
-      <CardHeader className={`${activeCampaign.status === 'active' ? 'bg-green-500/10' : 'bg-amber-500/10'}`}>
-        <CardTitle className="flex items-center justify-between text-lg font-medium">
-          <div className="flex items-center">
-            <Send className="mr-2 h-5 w-5" />
-            <span>Campanha em Execução: {activeCampaign.name}</span>
-          </div>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => navigate(`/campaigns/${activeCampaign.id}`)}
-          >
-            <BarChart2 className="mr-2 h-4 w-4" />
-            Ver Detalhes
-          </Button>
-        </CardTitle>
+    <Card className="overflow-hidden">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-lg">Campanha Ativa</CardTitle>
+          <Badge variant="secondary" className={`text-white ${getStatusColor(activeCampaign.status)}`}>
+            {getStatusText(activeCampaign.status)}
+          </Badge>
+        </div>
       </CardHeader>
-      <CardContent className="p-6">
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium">Progresso de Envio</span>
-            <div className="flex items-center space-x-2">
-              <Clock className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Tempo restante: {remainingTime}</span>
+      <CardContent className="space-y-4">
+        <div>
+          <h3 className="font-medium mb-2">{activeCampaign.name}</h3>
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span>Progresso</span>
+              <span>{activeCampaign.sent_count}/{activeCampaign.total_leads} enviadas</span>
+            </div>
+            <Progress value={progressPercentage} className="h-2" />
+            <div className="text-xs text-muted-foreground">
+              {Math.round(progressPercentage)}% concluído
             </div>
           </div>
-          <Progress value={progress} className="h-2 mb-2" />
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>{progress}% concluído</span>
-            <span>256/324 leads</span>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 text-sm">
+          <div className="space-y-1">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Sucessos:</span>
+              <span className="text-green-600 font-medium">{activeCampaign.success_count}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Falhas:</span>
+              <span className="text-red-600 font-medium">{activeCampaign.failed_count}</span>
+            </div>
+          </div>
+          <div className="space-y-1">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Taxa de sucesso:</span>
+              <span className="font-medium">
+                {Math.round((activeCampaign.success_count / activeCampaign.sent_count) * 100)}%
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Tempo restante:</span>
+              <span className="font-medium">~12 min</span>
+            </div>
           </div>
         </div>
-        
-        <div className="mb-6">
-          <h4 className="text-sm font-medium mb-2">Última Mensagem Enviada</h4>
-          <div className="bg-muted/30 rounded-lg p-3 text-sm">
-            <p className="font-medium">{lastLead.company}</p>
-            <p className="mt-1 text-muted-foreground">{lastLead.message}</p>
+
+        <div className="flex gap-2 pt-2">
+          <Button size="sm" variant="outline" className="flex-1">
+            <Pause className="h-4 w-4 mr-1" />
+            Pausar
+          </Button>
+          <Button size="sm" variant="outline" className="flex-1">
+            <RotateCcw className="h-4 w-4 mr-1" />
+            Reenviar Falhas
+          </Button>
+        </div>
+
+        {activeCampaign.failed_count > 0 && (
+          <div className="flex items-center gap-2 p-2 bg-amber-50 rounded-md text-sm text-amber-700">
+            <AlertCircle className="h-4 w-4" />
+            <span>{activeCampaign.failed_count} mensagens falharam - verifique a conexão</span>
           </div>
-        </div>
-        
-        <div className="flex flex-col sm:flex-row gap-3">
-          <Button 
-            variant={activeCampaign.status === 'active' ? 'outline' : 'default'}
-            onClick={handlePauseResume}
-            className="flex-1"
-          >
-            {activeCampaign.status === 'active' ? (
-              <>
-                <Pause className="mr-2 h-4 w-4" />
-                Pausar Campanha
-              </>
-            ) : (
-              <>
-                <Play className="mr-2 h-4 w-4" />
-                Retomar Campanha
-              </>
-            )}
-          </Button>
-          
-          <Button variant="outline" className="flex-1">
-            <Send className="mr-2 h-4 w-4" />
-            Testar Envio
-          </Button>
-        </div>
+        )}
       </CardContent>
     </Card>
   );

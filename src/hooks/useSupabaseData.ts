@@ -2,10 +2,21 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Database } from '@/integrations/supabase/types';
 
-// Define the valid table names based on the database schema
-type TableName = keyof Database['public']['Tables'];
+// Define table names that exist in our database
+type TableName = 
+  | 'profiles'
+  | 'plans' 
+  | 'user_plans'
+  | 'target_preferences'
+  | 'leads'
+  | 'campaigns'
+  | 'message_categories'
+  | 'message_templates'
+  | 'whatsapp_instances'
+  | 'whatsapp_connections'
+  | 'campaign_leads'
+  | 'lead_tags';
 
 export function useSupabaseData<T>(
   tableName: TableName,

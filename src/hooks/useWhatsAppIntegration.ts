@@ -1,6 +1,7 @@
+
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
-import { getQRCode, getPairingCode, checkConnectionStatus, forceDisconnectInstance } from '@/services/whatsappService';
+import { getQRCode, getPairingCode, checkConnectionStatus, forceDisconnectInstance, sendWhatsAppMessage } from '@/services/whatsappService';
 import { useWhatsappConnections } from './useWhatsappConnections';
 import { useWhatsappInstances } from './useWhatsappInstances';
 import { useAuth } from '@/providers/AuthProvider';
@@ -35,7 +36,7 @@ export function useWhatsAppIntegration() {
       // Atualiza o status para 'connecting' e associa a instância
       await updateConnection(connectionId, { 
         status: 'connecting',
-        instance_id: instance.instance_id
+        instance_id: instance.id
       });
 
       // Se forneceu número de telefone, tenta código de pareamento
