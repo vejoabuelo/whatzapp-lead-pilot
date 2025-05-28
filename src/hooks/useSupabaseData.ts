@@ -19,7 +19,7 @@ type TableName =
   | 'campaign_leads'
   | 'lead_tags';
 
-export function useSupabaseData<T extends Record<string, any> = Record<string, any>>(
+export function useSupabaseData<T = any>(
   tableName: TableName,
   options?: {
     defaultData?: T[];
@@ -42,13 +42,17 @@ export function useSupabaseData<T extends Record<string, any> = Record<string, a
     setError(null);
 
     try {
-      const query = supabase.from(tableName).select('*');
+      let query = supabase.from(tableName).select('*');
+      
+      if (options?.queryFilter) {
+        query = options.queryFilter(query);
+      }
       
       const { data: result, error } = await query;
 
       if (error) throw error;
 
-      setData(result as T[]);
+      setData((result as T[]) || []);
     } catch (err) {
       console.error(`Error fetching data from ${tableName}:`, err);
       setError(err as Error);
@@ -62,7 +66,7 @@ export function useSupabaseData<T extends Record<string, any> = Record<string, a
     try {
       const { data: result, error } = await supabase
         .from(tableName)
-        .insert(item)
+        .insert(item as any)
         .select();
 
       if (error) throw error;
@@ -83,14 +87,14 @@ export function useSupabaseData<T extends Record<string, any> = Record<string, a
     try {
       const { data: result, error } = await supabase
         .from(tableName)
-        .update(updates)
+        .update(updates as any)
         .eq('id', id)
         .select();
 
       if (error) throw error;
 
       if (result && result[0]) {
-        setData(prev => prev.map(item => item.id === id ? result[0] as T : item));
+        setData(prev => prev.map(item => (item as any).id === id ? result[0] as T : item));
         toast.success('Item atualizado com sucesso');
         return result[0];
       }
@@ -110,7 +114,7 @@ export function useSupabaseData<T extends Record<string, any> = Record<string, a
 
       if (error) throw error;
 
-      setData(prev => prev.filter(item => item.id !== id));
+      setData(prev => prev.filter(item => (item as any).id !== id));
       toast.success('Item removido com sucesso');
     } catch (err) {
       console.error(`Error deleting item from ${tableName}:`, err);
