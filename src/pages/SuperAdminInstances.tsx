@@ -1,425 +1,262 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/providers/AuthProvider';
-import Sidebar from '@/components/dashboard/Sidebar';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
-import { ArrowLeft, Plus, RefreshCcw, Trash2, Edit, AlertCircle, Check, X, User, Key, Users, LogOut } from 'lucide-react';
-import { useWhatsappInstances } from '@/hooks/useWhatsappInstances';
-import { toast } from 'sonner';
 
-const instanceSchema = z.object({
-  name: z.string().min(1, "Nome é obrigatório"),
-  instance_id: z.string().min(1, "ID da instância é obrigatório"),
-  api_key: z.string().min(1, "Token da instância é obrigatório"),
-  host: z.string().min(1, "Host é obrigatório"),
-  max_free_users: z.number().min(1, "Número máximo de usuários gratuitos é obrigatório")
-});
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { useWhatsappInstances } from "@/hooks/useWhatsappInstances";
+import { 
+  Server, 
+  Plus, 
+  Users,
+  AlertCircle,
+  CheckCircle,
+  Loader2,
+  Trash2,
+  Edit,
+  MoreVertical
+} from "lucide-react";
+import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const SuperAdminInstances = () => {
-  const navigate = useNavigate();
-  const { profile } = useAuth();
-  const { instances, isLoading, fetchInstances, addInstance, updateInstance, deleteInstance, disconnectUser } = useWhatsappInstances();
-  const [newInstanceDialog, setNewInstanceDialog] = useState(false);
-  const [editInstanceDialog, setEditInstanceDialog] = useState(false);
-  const [selectedInstance, setSelectedInstance] = useState<any>(null);
+  const [newInstanceName, setNewInstanceName] = useState("");
+  const [newInstanceId, setNewInstanceId] = useState("");
+  const [newApiKey, setNewApiKey] = useState("");
+  const [newHost, setNewHost] = useState("https://api.z-api.io");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  
+  const { instances, isLoading, addInstance, updateInstance, deleteInstance } = useWhatsappInstances();
 
-  // Redirecionar se não for super admin
-  if (profile && !profile.is_superadmin) {
-    navigate('/dashboard');
-    return null;
-  }
-
-  const newInstanceForm = useForm<z.infer<typeof instanceSchema>>({
-    resolver: zodResolver(instanceSchema),
-    defaultValues: {
-      name: "",
-      instance_id: "",
-      api_key: "",
-      host: "api.w-api.app",
-      max_free_users: 5
+  const handleCreateInstance = async () => {
+    if (!newInstanceName || !newInstanceId || !newApiKey) {
+      toast.error("Preencha todos os campos obrigatórios");
+      return;
     }
-  });
 
-  const editInstanceForm = useForm<z.infer<typeof instanceSchema>>({
-    resolver: zodResolver(instanceSchema),
-    defaultValues: {
-      name: "",
-      instance_id: "",
-      api_key: "",
-      host: "api.w-api.app",
-      max_free_users: 5
-    }
-  });
-
-  const handleAddInstance = async (values: z.infer<typeof instanceSchema>) => {
-    const result = await addInstance(
-      values.name, 
-      values.instance_id, 
-      values.api_key,
-      values.max_free_users,
-      values.host
-    );
-    if (result) {
-      setNewInstanceDialog(false);
-      newInstanceForm.reset();
+    setIsCreating(true);
+    try {
+      await addInstance({
+        name: newInstanceName,
+        instance_id: newInstanceId,
+        api_key: newApiKey,
+        host: newHost,
+        is_available: true,
+        max_free_users: 5,
+        current_free_users: 0
+      });
+      
+      setNewInstanceName("");
+      setNewInstanceId("");
+      setNewApiKey("");
+      setNewHost("https://api.z-api.io");
+      setIsDialogOpen(false);
+    } catch (error) {
+      console.error("Error creating instance:", error);
+    } finally {
+      setIsCreating(false);
     }
   };
 
-  const handleEditInstance = async (values: z.infer<typeof instanceSchema>) => {
-    if (!selectedInstance) return;
-    
-    const result = await updateInstance(selectedInstance.id, values);
-    if (result) {
-      setEditInstanceDialog(false);
-      editInstanceForm.reset();
+  const handleToggleAvailability = async (instanceId: string, currentStatus: boolean) => {
+    try {
+      await updateInstance(instanceId, { is_available: !currentStatus });
+    } catch (error) {
+      console.error("Error updating instance:", error);
     }
   };
 
-  const openEditDialog = (instance: any) => {
-    setSelectedInstance(instance);
-    editInstanceForm.setValue("name", instance.name);
-    editInstanceForm.setValue("instance_id", instance.instance_id);
-    editInstanceForm.setValue("api_key", instance.api_key);
-    editInstanceForm.setValue("host", instance.host);
-    editInstanceForm.setValue("max_free_users", instance.max_free_users);
-    setEditInstanceDialog(true);
-  };
-
-  const confirmDelete = async (id: string) => {
+  const handleDeleteInstance = async (instanceId: string) => {
     if (window.confirm("Tem certeza que deseja excluir esta instância?")) {
-      await deleteInstance(id);
-    }
-  };
-
-  const handleDisconnectUser = async (userId: string) => {
-    if (window.confirm("Tem certeza que deseja desconectar este usuário?")) {
-      await disconnectUser(userId);
+      try {
+        await deleteInstance(instanceId);
+      } catch (error) {
+        console.error("Error deleting instance:", error);
+      }
     }
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      <Sidebar />
-      <div className="flex-1 overflow-auto">
-        <header className="bg-white border-b border-gray-200 py-4 px-6 sticky top-0 z-10">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <Button variant="ghost" size="icon" asChild>
-                <a href="/superadmin">
-                  <ArrowLeft size={20} />
-                </a>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold">Instâncias WhatsApp</h1>
+          <p className="text-gray-600">Gerencie as instâncias do WhatsApp para o sistema</p>
+        </div>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              Nova Instância
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Criar Nova Instância</DialogTitle>
+              <DialogDescription>
+                Configure uma nova instância do WhatsApp para o sistema
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="instance-name">Nome da Instância</Label>
+                <Input
+                  id="instance-name"
+                  placeholder="Ex: Instância Principal"
+                  value={newInstanceName}
+                  onChange={(e) => setNewInstanceName(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="instance-id">ID da Instância</Label>
+                <Input
+                  id="instance-id"
+                  placeholder="Ex: 12345"
+                  value={newInstanceId}
+                  onChange={(e) => setNewInstanceId(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="api-key">Chave da API</Label>
+                <Input
+                  id="api-key"
+                  placeholder="Ex: ABC123XYZ"
+                  value={newApiKey}
+                  onChange={(e) => setNewApiKey(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="host">Host da API</Label>
+                <Input
+                  id="host"
+                  placeholder="https://api.z-api.io"
+                  value={newHost}
+                  onChange={(e) => setNewHost(e.target.value)}
+                />
+              </div>
+              <Button 
+                onClick={handleCreateInstance} 
+                disabled={isCreating}
+                className="w-full"
+              >
+                {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Criar Instância
               </Button>
-              <h1 className="text-2xl font-semibold text-gray-800 ml-2">Gerenciar Instâncias WhatsApp</h1>
             </div>
-            <div className="flex items-center space-x-4">
-              <Button variant="outline" size="sm" className="gap-2" onClick={() => fetchInstances()}>
-                <RefreshCcw size={16} />
-                <span className="hidden sm:inline">Atualizar</span>
-              </Button>
-              <Dialog open={newInstanceDialog} onOpenChange={setNewInstanceDialog}>
-                <DialogTrigger asChild>
-                  <Button className="gap-2">
-                    <Plus size={16} />
-                    <span className="hidden sm:inline">Nova Instância</span>
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Adicionar Nova Instância</DialogTitle>
-                    <DialogDescription>
-                      Insira os dados da nova instância do WhatsApp para disponibilização aos usuários gratuitos.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <Form {...newInstanceForm}>
-                    <form onSubmit={newInstanceForm.handleSubmit(handleAddInstance)} className="space-y-4 py-4">
-                      <FormField
-                        control={newInstanceForm.control}
-                        name="name"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Nome da Instância</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Ex: WhatsApp Business 1" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={newInstanceForm.control}
-                        name="host"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Host</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Ex: api.w-api.app" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={newInstanceForm.control}
-                        name="instance_id"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>ID da Instância</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Ex: YME47V-WW70B4-9LCKDV" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={newInstanceForm.control}
-                        name="api_key"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Token da Instância</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Ex: eDtOZz4hWDGRmv3UNGh2F5qmiH12gMco" type="password" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={newInstanceForm.control}
-                        name="max_free_users"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Número Máximo de Usuários Gratuitos</FormLabel>
-                            <FormControl>
-                              <Input type="number" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <DialogFooter>
-                        <Button variant="outline" type="button" onClick={() => setNewInstanceDialog(false)}>Cancelar</Button>
-                        <Button type="submit">Adicionar</Button>
-                      </DialogFooter>
-                    </form>
-                  </Form>
-                </DialogContent>
-              </Dialog>
-            </div>
-          </div>
-        </header>
-
-        <main className="p-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Instâncias do WhatsApp</CardTitle>
-              <CardDescription>
-                Gerencie as instâncias disponíveis para usuários gratuitos. Cada instância pode ser compartilhada entre vários usuários gratuitos.
-                Quando um novo usuário gratuito se conecta, o usuário anterior é automaticamente desconectado.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="flex justify-center items-center py-8">
-                  <div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div>
-                </div>
-              ) : instances.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12">
-                  <AlertCircle className="h-12 w-12 text-gray-300 mb-2" />
-                  <p className="text-gray-500 mb-4">Nenhuma instância cadastrada</p>
-                  <Button variant="outline" onClick={() => setNewInstanceDialog(true)}>
-                    Adicionar instância
-                  </Button>
-                </div>
-              ) : (
-                <div className="bg-white rounded-md border">
-                  <div className="overflow-x-auto">
-                    <table className="w-full border-collapse">
-                      <thead>
-                        <tr className="border-b border-gray-200">
-                          <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-3 px-4">Nome</th>
-                          <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-3 px-4">ID da Instância</th>
-                          <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-3 px-4">Disponível</th>
-                          <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-3 px-4">Usuários Gratuitos</th>
-                          <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-3 px-4">Usuário Atual</th>
-                          <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-3 px-4">Ações</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {instances.map((instance) => (
-                          <tr key={instance.id} className="border-b border-gray-200 hover:bg-gray-50">
-                            <td className="py-3 px-4">
-                              <div className="font-medium">{instance.name}</div>
-                            </td>
-                            <td className="py-3 px-4">
-                              <div className="flex items-center">
-                                <Key size={16} className="text-gray-400 mr-2" />
-                                <code className="text-sm bg-gray-100 px-2 py-1 rounded">{instance.instance_id}</code>
-                              </div>
-                            </td>
-                            <td className="py-3 px-4">
-                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                instance.is_available 
-                                  ? 'bg-green-100 text-green-800' 
-                                  : 'bg-red-100 text-red-800'
-                              }`}>
-                                {instance.is_available ? (
-                                  <><Check size={12} className="mr-1" /> Sim</>
-                                ) : (
-                                  <><X size={12} className="mr-1" /> Não</>
-                                )}
-                              </span>
-                            </td>
-                            <td className="py-3 px-4">
-                              <div className="flex items-center">
-                                <Users size={16} className="text-gray-400 mr-2" />
-                                <span>{instance.current_free_users} / {instance.max_free_users}</span>
-                              </div>
-                            </td>
-                            <td className="py-3 px-4">
-                              {instance.current_user_id ? (
-                                <div className="flex items-center">
-                                  <User size={16} className="text-gray-400 mr-2" />
-                                  <span className="text-sm">{instance.current_user_id}</span>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleDisconnectUser(instance.current_user_id!)}
-                                    className="ml-2"
-                                  >
-                                    <LogOut size={16} className="text-red-500" />
-                                  </Button>
-                                </div>
-                              ) : (
-                                <span className="text-gray-400 text-sm">Nenhum</span>
-                              )}
-                            </td>
-                            <td className="py-3 px-4">
-                              <div className="flex items-center space-x-2">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => openEditDialog(instance)}
-                                >
-                                  <Edit size={16} className="text-blue-500" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => confirmDelete(instance.id)}
-                                >
-                                  <Trash2 size={16} className="text-red-500" />
-                                </Button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </main>
+          </DialogContent>
+        </Dialog>
       </div>
 
-      <Dialog open={editInstanceDialog} onOpenChange={setEditInstanceDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Editar Instância</DialogTitle>
-            <DialogDescription>
-              Atualize as informações da instância do WhatsApp.
-            </DialogDescription>
-          </DialogHeader>
-          <Form {...editInstanceForm}>
-            <form onSubmit={editInstanceForm.handleSubmit(handleEditInstance)} className="space-y-4 py-4">
-              <FormField
-                control={editInstanceForm.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nome da Instância</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={editInstanceForm.control}
-                name="host"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Host</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={editInstanceForm.control}
-                name="instance_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>ID da Instância</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={editInstanceForm.control}
-                name="api_key"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Token da Instância</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={editInstanceForm.control}
-                name="max_free_users"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Número Máximo de Usuários Gratuitos</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="number" 
-                        {...field}
-                        onChange={(e) => field.onChange(parseInt(e.target.value))}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <DialogFooter>
-                <Button variant="outline" type="button" onClick={() => setEditInstanceDialog(false)}>Cancelar</Button>
-                <Button type="submit">Salvar</Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
+      <div className="grid gap-6">
+        {isLoading ? (
+          <Card>
+            <CardContent className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-blue-600 mr-2" />
+              <span>Carregando instâncias...</span>
+            </CardContent>
+          </Card>
+        ) : instances.length === 0 ? (
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-12">
+              <Server className="h-12 w-12 text-gray-300 mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhuma instância encontrada</h3>
+              <p className="text-gray-500 text-center mb-4">
+                Crie uma nova instância do WhatsApp para começar a gerenciar conexões
+              </p>
+              <Button onClick={() => setIsDialogOpen(true)}>
+                <Plus className="mr-2 h-4 w-4" />
+                Criar Primeira Instância
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          instances.map((instance) => (
+            <Card key={instance.id}>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 bg-green-100 rounded-full flex items-center justify-center">
+                      <Server className="h-5 w-5 text-green-600" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg">{instance.name}</CardTitle>
+                      <CardDescription>ID: {instance.instance_id}</CardDescription>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {instance.is_available ? (
+                      <Badge variant="secondary" className="bg-green-100 text-green-800">
+                        <CheckCircle className="h-3 w-3 mr-1" />
+                        Disponível
+                      </Badge>
+                    ) : (
+                      <Badge variant="secondary" className="bg-red-100 text-red-800">
+                        <AlertCircle className="h-3 w-3 mr-1" />
+                        Indisponível
+                      </Badge>
+                    )}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem 
+                          onClick={() => handleToggleAvailability(instance.id, instance.is_available)}
+                        >
+                          {instance.is_available ? "Marcar como Indisponível" : "Marcar como Disponível"}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          className="text-red-600"
+                          onClick={() => handleDeleteInstance(instance.id)}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Excluir
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="flex items-center gap-2">
+                    <Users className="h-4 w-4 text-gray-500" />
+                    <span className="text-sm text-gray-600">
+                      Usuários: {instance.current_free_users || 0}/{instance.max_free_users || 5}
+                    </span>
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    <span className="font-medium">Host:</span> {instance.host}
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    <span className="font-medium">API Key:</span> {instance.api_key.substring(0, 8)}...
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
     </div>
   );
 };
 
-export default SuperAdminInstances; 
+export default SuperAdminInstances;

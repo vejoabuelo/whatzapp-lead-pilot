@@ -2,7 +2,17 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import type { WhatsappInstance, WhatsappInstanceInsert } from '@/types/database';
+import type { WhatsappInstance } from '@/types/database';
+
+interface WhatsappInstanceInsert {
+  name: string;
+  instance_id: string;
+  api_key: string;
+  host?: string;
+  is_available?: boolean;
+  max_free_users?: number;
+  current_free_users?: number;
+}
 
 export function useWhatsappInstances() {
   const [instances, setInstances] = useState<WhatsappInstance[]>([]);
@@ -29,15 +39,7 @@ export function useWhatsappInstances() {
     try {
       const { data, error } = await supabase
         .from('whatsapp_instances')
-        .insert({
-          name: instanceData.name,
-          instance_id: instanceData.instance_id,
-          api_key: instanceData.api_key,
-          host: instanceData.host || 'https://api.z-api.io',
-          is_available: instanceData.is_available ?? true,
-          max_free_users: instanceData.max_free_users ?? 5,
-          current_free_users: instanceData.current_free_users ?? 0
-        })
+        .insert(instanceData)
         .select()
         .single();
 

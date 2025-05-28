@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import Sidebar from "@/components/dashboard/Sidebar";
 import { useSupabaseData } from "@/hooks/useSupabaseData";
 import { useAuth } from "@/providers/AuthProvider";
-import { Empresa, Campaign } from "@/types/database";
+import { Campaign } from "@/types/database";
 import { startSimulatedCampaign } from "@/services/whatsappService";
 import { 
   ArrowLeft, 
@@ -27,6 +28,16 @@ import {
   Zap
 } from "lucide-react";
 import { toast } from "sonner";
+
+interface Empresa {
+  cnpj_basico: string;
+  razao_social: string;
+  nome_fantasia?: string;
+  cnae_descricao?: string;
+  municipio?: string;
+  telefone_1?: string;
+  situacao_cadastral?: string;
+}
 
 const NewCampaign = () => {
   const navigate = useNavigate();
@@ -102,7 +113,7 @@ const NewCampaign = () => {
         description: `Campanha com ${selectedEmpresas.length} empresas selecionadas`
       });
 
-      if (newCampaign) {
+      if (newCampaign && 'id' in newCampaign) {
         toast.success("Campanha criada! Iniciando envios simulados...");
         
         // Iniciar campanha simulada

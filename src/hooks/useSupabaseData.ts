@@ -19,7 +19,7 @@ type TableName =
   | 'campaign_leads'
   | 'lead_tags';
 
-export function useSupabaseData<T = any>(
+export function useSupabaseData<T extends Record<string, any> = Record<string, any>>(
   tableName: TableName,
   options?: {
     defaultData?: T[];
@@ -58,7 +58,7 @@ export function useSupabaseData<T = any>(
     }
   };
 
-  const addItem = async (item: any) => {
+  const addItem = async (item: Partial<T>) => {
     try {
       const { data: result, error } = await supabase
         .from(tableName)
@@ -67,9 +67,11 @@ export function useSupabaseData<T = any>(
 
       if (error) throw error;
 
-      setData(prev => [...prev, result[0] as T]);
-      toast.success('Item adicionado com sucesso');
-      return result[0];
+      if (result && result[0]) {
+        setData(prev => [...prev, result[0] as T]);
+        toast.success('Item adicionado com sucesso');
+        return result[0];
+      }
     } catch (err) {
       console.error(`Error adding item to ${tableName}:`, err);
       toast.error(`Erro ao adicionar item em ${tableName}`);
@@ -77,7 +79,7 @@ export function useSupabaseData<T = any>(
     }
   };
 
-  const updateItem = async (id: string, updates: any) => {
+  const updateItem = async (id: string, updates: Partial<T>) => {
     try {
       const { data: result, error } = await supabase
         .from(tableName)
@@ -87,9 +89,11 @@ export function useSupabaseData<T = any>(
 
       if (error) throw error;
 
-      setData(prev => prev.map(item => (item as any).id === id ? result[0] as T : item));
-      toast.success('Item atualizado com sucesso');
-      return result[0];
+      if (result && result[0]) {
+        setData(prev => prev.map(item => item.id === id ? result[0] as T : item));
+        toast.success('Item atualizado com sucesso');
+        return result[0];
+      }
     } catch (err) {
       console.error(`Error updating item in ${tableName}:`, err);
       toast.error(`Erro ao atualizar item em ${tableName}`);
@@ -106,7 +110,7 @@ export function useSupabaseData<T = any>(
 
       if (error) throw error;
 
-      setData(prev => prev.filter(item => (item as any).id !== id));
+      setData(prev => prev.filter(item => item.id !== id));
       toast.success('Item removido com sucesso');
     } catch (err) {
       console.error(`Error deleting item from ${tableName}:`, err);
