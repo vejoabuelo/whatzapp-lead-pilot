@@ -19,13 +19,15 @@ type TableName =
   | 'campaign_leads'
   | 'lead_tags';
 
+interface UseSupabaseDataOptions {
+  defaultData?: any[];
+  queryFilter?: (query: any) => any;
+  fetchOnMount?: boolean;
+}
+
 export function useSupabaseData<T = any>(
   tableName: TableName,
-  options?: {
-    defaultData?: T[];
-    queryFilter?: (query: any) => any;
-    fetchOnMount?: boolean;
-  }
+  options?: UseSupabaseDataOptions
 ) {
   const [data, setData] = useState<T[]>(options?.defaultData || []);
   const [isLoading, setIsLoading] = useState(false);
@@ -52,7 +54,7 @@ export function useSupabaseData<T = any>(
 
       if (error) throw error;
 
-      setData(result as T[] || []);
+      setData(result || []);
     } catch (err) {
       console.error(`Error fetching data from ${tableName}:`, err);
       setError(err as Error);
@@ -72,7 +74,7 @@ export function useSupabaseData<T = any>(
       if (error) throw error;
 
       if (result && result[0]) {
-        setData(prev => [...prev, result[0] as T]);
+        setData(prev => [...prev, result[0]]);
         toast.success('Item adicionado com sucesso');
         return result[0];
       }
@@ -95,7 +97,7 @@ export function useSupabaseData<T = any>(
 
       if (result && result[0]) {
         setData(prev => prev.map(item => 
-          (item as any).id === id ? result[0] as T : item
+          (item as any).id === id ? result[0] : item
         ));
         toast.success('Item atualizado com sucesso');
         return result[0];
