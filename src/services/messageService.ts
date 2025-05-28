@@ -46,6 +46,23 @@ export class MessageService {
     }
   }
 
+  static async updateCategory(categoryId: string, updates: Partial<MessageCategory>): Promise<MessageCategory> {
+    try {
+      const { data, error } = await supabase
+        .from('message_categories')
+        .update(updates)
+        .eq('id', categoryId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error updating category:', error);
+      throw error;
+    }
+  }
+
   static async deleteCategory(categoryId: string): Promise<void> {
     try {
       const { error } = await supabase
@@ -135,9 +152,7 @@ export class MessageService {
   }
 }
 
-// Export default for compatibility
 export default MessageService;
 
-// Named exports for components that expect them
 export type { MessageCategory, MessageTemplate };
 export const messageService = MessageService;

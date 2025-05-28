@@ -1,538 +1,524 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import Sidebar from "@/components/dashboard/Sidebar";
-import { Plus, Search, MessageSquare, FolderPlus, Pencil, Trash2, MoreVertical } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/components/ui/use-toast";
-import { messageService, MessageCategory, MessageTemplate } from '@/services/messageService';
+  FolderOpen,
+  MessageSquare,
+  Plus,
+  MoreVertical,
+  Edit,
+  Trash2,
+  Loader2,
+} from "lucide-react";
+import { useAuth } from "@/providers/AuthProvider";
+import { toast } from "sonner";
+import MessageService, { MessageCategory, MessageTemplate } from "@/services/messageService";
 
 const MessageLibrary = () => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [showNewCategoryDialog, setShowNewCategoryDialog] = useState(false);
-  const [showMessageDialog, setShowMessageDialog] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [editingMessage, setEditingMessage] = useState<MessageTemplate | null>(null);
-  
+  const { user } = useAuth();
   const [categories, setCategories] = useState<MessageCategory[]>([]);
-  const [messages, setMessages] = useState<MessageTemplate[]>([]);
-  const [isLoadingCategories, setIsLoadingCategories] = useState(true);
-  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
-  
-  // Estados para os formulários
-  const [newCategory, setNewCategory] = useState({ name: '', description: '' });
-  const [messageForm, setMessageForm] = useState({ 
-    content: '', 
-    category_id: '' 
-  });
-  
-  const { toast } = useToast();
+  const [templates, setTemplates] = useState<MessageTemplate[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [showCategoryDialog, setShowCategoryDialog] = useState(false);
+  const [showTemplateDialog, setShowTemplateDialog] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<MessageCategory | null>(null);
+  const [editingTemplate, setEditingTemplate] = useState<MessageTemplate | null>(null);
+  const [newCategory, setNewCategory] = useState({ name: '', description: '', segment: '' });
+  const [newTemplate, setNewTemplate] = useState({ content: '', variables_used: [] as string[] });
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Carregar categorias na inicialização
-  useEffect(() => {
-    loadCategories();
+  const loadCategories = useCallback(async () => {
+    if (!user) return;
+    
+    try {
+      setIsLoading(true);
+      const data = await MessageService.getCategories(user.id);
+      setCategories(data);
+    } catch (error) {
+      console.error('Error loading categories:', error);
+      toast.error('Erro ao carregar categorias');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user]);
+
+  const loadTemplates = useCallback(async (categoryId: string) => {
+    try {
+      const data = await MessageService.getTemplatesByCategory(categoryId);
+      setTemplates(data);
+    } catch (error) {
+      console.error('Error loading templates:', error);
+      toast.error('Erro ao carregar templates');
+    }
   }, []);
 
-  // Carregar mensagens quando uma categoria for selecionada
+  useEffect(() => {
+    loadCategories();
+  }, [loadCategories]);
+
   useEffect(() => {
     if (selectedCategory) {
-      loadMessagesByCategory(selectedCategory);
+      loadTemplates(selectedCategory);
     }
-  }, [selectedCategory]);
+  }, [selectedCategory, loadTemplates]);
 
-  // Função para carregar categorias
-  const loadCategories = async () => {
-    setIsLoadingCategories(true);
+  const handleCreateCategory = async () => {
+    if (!user || !newCategory.name.trim()) return;
+    
     try {
-      const data = await messageService.getCategories();
-      setCategories(data);
-      
-      // Se tiver categorias, seleciona a primeira automaticamente
-      if (data.length > 0 && !selectedCategory) {
-        setSelectedCategory(data[0].id);
-      }
-    } catch (error: any) {
-      console.error('Erro ao carregar categorias:', error.message);
-      toast({
-        title: 'Erro ao carregar categorias',
-        description: error.message,
-        variant: 'destructive'
-      });
-    } finally {
-      setIsLoadingCategories(false);
-    }
-  };
-
-  // Função para carregar mensagens por categoria
-  const loadMessagesByCategory = async (categoryId: string) => {
-    setIsLoadingMessages(true);
-    try {
-      const data = await messageService.getTemplatesByCategory(categoryId);
-      setMessages(data);
-    } catch (error: any) {
-      console.error('Erro ao carregar mensagens:', error.message);
-      toast({
-        title: 'Erro ao carregar mensagens',
-        description: error.message,
-        variant: 'destructive'
-      });
-    } finally {
-      setIsLoadingMessages(false);
-    }
-  };
-
-  // Função para criar nova categoria
-  const createCategory = async () => {
-    try {
-      if (!newCategory.name.trim()) {
-        toast({
-          title: 'Nome obrigatório',
-          description: 'O nome da categoria é obrigatório',
-          variant: 'destructive'
-        });
-        return;
-      }
-
-      await messageService.createCategory({
+      await MessageService.createCategory({
         name: newCategory.name,
-        description: newCategory.description
+        description: newCategory.description,
+        segment: newCategory.segment,
+        user_id: user.id
       });
       
-      toast({
-        title: 'Categoria criada',
-        description: 'Categoria criada com sucesso!'
-      });
-      
-      // Recarregar categorias e fechar o diálogo
-      loadCategories();
-      setShowNewCategoryDialog(false);
-      setNewCategory({ name: '', description: '' });
-    } catch (error: any) {
-      console.error('Erro ao criar categoria:', error.message);
-      toast({
-        title: 'Erro ao criar categoria',
-        description: error.message,
-        variant: 'destructive'
-      });
+      await loadCategories();
+      setShowCategoryDialog(false);
+      setNewCategory({ name: '', description: '', segment: '' });
+      toast.success('Categoria criada com sucesso!');
+    } catch (error) {
+      console.error('Error creating category:', error);
+      toast.error('Erro ao criar categoria');
     }
   };
 
-  // Função para criar/editar mensagem
-  const saveMessage = async () => {
+  const handleUpdateCategory = async () => {
+    if (!editingCategory) return;
+    
     try {
-      if (!messageForm.content.trim()) {
-        toast({
-          title: 'Conteúdo obrigatório',
-          description: 'O conteúdo da mensagem é obrigatório',
-          variant: 'destructive'
-        });
-        return;
-      }
-
-      const categoryId = messageForm.category_id || selectedCategory;
-      if (!categoryId) {
-        toast({
-          title: 'Categoria obrigatória',
-          description: 'Selecione uma categoria para a mensagem',
-          variant: 'destructive'
-        });
-        return;
-      }
-
-      if (editingMessage) {
-        // Editar mensagem existente
-        await messageService.updateTemplate(editingMessage.id, {
-          content: messageForm.content,
-          category_id: categoryId
-        });
-        toast({
-          title: 'Mensagem atualizada',
-          description: 'Mensagem atualizada com sucesso!'
-        });
-      } else {
-        // Criar nova mensagem
-        await messageService.createTemplate({
-          name: 'Template',
-          content: messageForm.content,
-          category_id: categoryId
-        });
-        toast({
-          title: 'Mensagem criada',
-          description: 'Mensagem criada com sucesso!'
-        });
-      }
+      await MessageService.updateCategory(editingCategory.id, {
+        name: newCategory.name,
+        description: newCategory.description,
+        segment: newCategory.segment
+      });
       
-      // Recarregar mensagens e categorias
+      await loadCategories();
+      setShowCategoryDialog(false);
+      setEditingCategory(null);
+      setNewCategory({ name: '', description: '', segment: '' });
+      toast.success('Categoria atualizada com sucesso!');
+    } catch (error) {
+      console.error('Error updating category:', error);
+      toast.error('Erro ao atualizar categoria');
+    }
+  };
+
+  const handleCreateTemplate = async () => {
+    if (!selectedCategory || !newTemplate.content.trim()) return;
+    
+    try {
+      await MessageService.createTemplate({
+        category_id: selectedCategory,
+        content: newTemplate.content,
+        variables_used: newTemplate.variables_used
+      });
+      
+      await loadTemplates(selectedCategory);
+      setShowTemplateDialog(false);
+      setNewTemplate({ content: '', variables_used: [] });
+      toast.success('Template criado com sucesso!');
+    } catch (error) {
+      console.error('Error creating template:', error);
+      toast.error('Erro ao criar template');
+    }
+  };
+
+  const handleUpdateTemplate = async () => {
+    if (!editingTemplate) return;
+    
+    try {
+      await MessageService.updateTemplate(editingTemplate.id, {
+        content: newTemplate.content,
+        variables_used: newTemplate.variables_used
+      });
+      
       if (selectedCategory) {
-        loadMessagesByCategory(selectedCategory);
+        await loadTemplates(selectedCategory);
       }
-      loadCategories();
-      setShowMessageDialog(false);
-      setMessageForm({ content: '', category_id: '' });
-      setEditingMessage(null);
-    } catch (error: any) {
-      console.error('Erro ao salvar mensagem:', error.message);
-      toast({
-        title: `Erro ao ${editingMessage ? 'atualizar' : 'criar'} mensagem`,
-        description: error.message,
-        variant: 'destructive'
-      });
+      setShowTemplateDialog(false);
+      setEditingTemplate(null);
+      setNewTemplate({ content: '', variables_used: [] });
+      toast.success('Template atualizado com sucesso!');
+    } catch (error) {
+      console.error('Error updating template:', error);
+      toast.error('Erro ao atualizar template');
     }
   };
 
-  // Função para excluir uma categoria
-  const deleteCategory = async (categoryId: string) => {
+  const handleDeleteCategory = async (categoryId: string) => {
     try {
-      await messageService.deleteCategory(categoryId);
-      
-      toast({
-        title: 'Categoria excluída',
-        description: 'Categoria excluída com sucesso!'
-      });
-      
+      await MessageService.deleteCategory(categoryId);
+      await loadCategories();
       if (selectedCategory === categoryId) {
         setSelectedCategory(null);
+        setTemplates([]);
       }
-      
-      loadCategories();
-    } catch (error: any) {
-      console.error('Erro ao excluir categoria:', error.message);
-      toast({
-        title: 'Erro ao excluir categoria',
-        description: error.message,
-        variant: 'destructive'
-      });
+      toast.success('Categoria removida com sucesso!');
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      toast.error('Erro ao remover categoria');
     }
   };
 
-  // Função para excluir uma mensagem
-  const deleteMessage = async (messageId: string) => {
+  const handleDeleteTemplate = async (templateId: string) => {
     try {
-      if (!selectedCategory) return;
-      
-      await messageService.deleteTemplate(messageId, selectedCategory);
-      
-      toast({
-        title: 'Mensagem excluída',
-        description: 'Mensagem excluída com sucesso!'
-      });
-      
+      await MessageService.deleteTemplate(templateId);
       if (selectedCategory) {
-        loadMessagesByCategory(selectedCategory);
+        await loadTemplates(selectedCategory);
       }
-      loadCategories(); // Recarrega categorias para atualizar contagem
-    } catch (error: any) {
-      console.error('Erro ao excluir mensagem:', error.message);
-      toast({
-        title: 'Erro ao excluir mensagem',
-        description: error.message,
-        variant: 'destructive'
-      });
+      toast.success('Template removido com sucesso!');
+    } catch (error) {
+      console.error('Error deleting template:', error);
+      toast.error('Erro ao remover template');
     }
   };
 
-  // Filtrar mensagens com base no termo de busca
-  const filteredMessages = messages.filter(message => 
-    message.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    message.content.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const extractVariables = (content: string): string[] => {
+    const regex = /\{\{([^}]+)\}\}/g;
+    const variables: string[] = [];
+    let match;
+    
+    while ((match = regex.exec(content)) !== null) {
+      if (!variables.includes(match[1])) {
+        variables.push(match[1]);
+      }
+    }
+    
+    return variables;
+  };
 
+  const handleTemplateContentChange = (content: string) => {
+    const variables = extractVariables(content);
+    setNewTemplate({ content, variables_used: variables });
+  };
+
+  const openEditCategory = (category: MessageCategory) => {
+    setEditingCategory(category);
+    setNewCategory({
+      name: category.name,
+      description: category.description || '',
+      segment: category.segment || ''
+    });
+    setShowCategoryDialog(true);
+  };
+
+  const openEditTemplate = (template: MessageTemplate) => {
+    setEditingTemplate(template);
+    setNewTemplate({
+      content: template.content,
+      variables_used: template.variables_used || []
+    });
+    setShowTemplateDialog(true);
+  };
+  
   return (
-    <div className="flex h-screen bg-gray-50">
-      <Sidebar />
-      <div className="flex-1 overflow-auto">
-        <header className="bg-white border-b border-gray-200 py-4 px-6 sticky top-0 z-10">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-semibold text-gray-800">Biblioteca de Mensagens</h1>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setShowNewCategoryDialog(true)}>
-                <FolderPlus className="mr-2 h-4 w-4" />
-                Nova Categoria
-              </Button>
-              <Button onClick={() => {
-                setEditingMessage(null);
-                setMessageForm({ content: '', category_id: '' });
-                setShowMessageDialog(true);
-              }}>
-                <Plus className="mr-2 h-4 w-4" />
-                Nova Mensagem
-              </Button>
-            </div>
-          </div>
-        </header>
-
-        <main className="p-6">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            {/* Lista de Categorias */}
-            <div className="col-span-1">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Categorias</CardTitle>
-                  <CardDescription>Organize suas mensagens em grupos</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {isLoadingCategories ? (
-                    <p className="text-center py-4 text-gray-500">Carregando categorias...</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {categories.length === 0 ? (
-                        <p className="text-center py-4 text-gray-500">Nenhuma categoria encontrada</p>
-                      ) : (
-                        categories.map((category) => (
-                          <div
-                            key={category.id}
-                            className={`p-3 rounded-lg cursor-pointer hover:bg-gray-100 flex items-center justify-between ${
-                              selectedCategory === category.id ? 'bg-gray-100' : ''
-                            }`}
-                            onClick={() => setSelectedCategory(category.id)}
-                          >
-                            <div className="flex items-center gap-3">
-                              <MessageSquare className="h-4 w-4 text-gray-500" />
-                              <div>
-                                <p className="font-medium">{category.name}</p>
-                                <p className="text-xs text-gray-500">{category.message_count || 0} mensagens</p>
-                              </div>
-                            </div>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm">
-                                  <MoreVertical size={16} />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={e => {
-                                  e.stopPropagation();
-                                  // Implementar edição
-                                }}>
-                                  <Pencil className="mr-2 h-4 w-4" />
-                                  Editar
-                                </DropdownMenuItem>
-                                <DropdownMenuItem 
-                                  className="text-red-600"
-                                  onClick={e => {
-                                    e.stopPropagation();
-                                    deleteCategory(category.id);
-                                  }}
-                                >
-                                  <Trash2 className="mr-2 h-4 w-4" />
-                                  Excluir
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Lista de Mensagens */}
-            <div className="col-span-1 lg:col-span-3">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Mensagens</CardTitle>
-                  <CardDescription>
-                    {selectedCategory 
-                      ? `Mensagens da categoria ${categories.find(c => c.id === selectedCategory)?.name}`
-                      : 'Selecione uma categoria para ver suas mensagens'}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="mb-4">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={18} />
-                      <Input
-                        placeholder="Buscar mensagens..."
-                        className="pl-10"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                      />
-                    </div>
-                  </div>
-
-                  {!selectedCategory ? (
-                    <p className="text-center py-4 text-gray-500">Selecione uma categoria para ver suas mensagens</p>
-                  ) : isLoadingMessages ? (
-                    <p className="text-center py-4 text-gray-500">Carregando mensagens...</p>
-                  ) : (
-                    <div className="space-y-4">
-                      {filteredMessages.length === 0 ? (
-                        <p className="text-center py-4 text-gray-500">
-                          {searchTerm 
-                            ? 'Nenhuma mensagem encontrada para esta busca' 
-                            : 'Nenhuma mensagem nesta categoria'}
-                        </p>
-                      ) : (
-                        filteredMessages.map((message) => (
-                          <div key={message.id} className="p-4 border border-gray-200 rounded-lg hover:border-blue-500">
-                            <div className="flex justify-between items-start mb-2">
-                              <div>
-                                <h3 className="font-medium">{message.name}</h3>
-                                {message.description && (
-                                  <p className="text-sm text-gray-500 mt-1">{message.description}</p>
-                                )}
-                                {message.variables && message.variables.length > 0 && (
-                                  <p className="text-sm text-gray-500 mt-1">
-                                    Variáveis: {message.variables.map(v => `{{${v}}}`).join(', ')}
-                                  </p>
-                                )}
-                              </div>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="sm">
-                                    <MoreVertical size={16} />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem>
-                                    <Pencil className="mr-2 h-4 w-4" />
-                                    Editar
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem 
-                                    className="text-red-600"
-                                    onClick={() => deleteMessage(message.id)}
-                                  >
-                                    <Trash2 className="mr-2 h-4 w-4" />
-                                    Excluir
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </div>
-                            <div className="mt-3 bg-gray-50 p-3 rounded whitespace-pre-wrap text-sm">
-                              {message.content}
-                            </div>
-                            <p className="text-xs text-gray-400 mt-2">
-                              Criada em {new Date(message.created_at).toLocaleDateString()}
-                            </p>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </main>
-
-        {/* Dialog para Nova Categoria */}
-        <Dialog open={showNewCategoryDialog} onOpenChange={setShowNewCategoryDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Nova Categoria</DialogTitle>
-              <DialogDescription>
-                Crie uma nova categoria para organizar suas mensagens
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Nome da Categoria</Label>
-                <Input 
-                  id="name" 
-                  placeholder="Ex: Restaurantes, Black Friday"
-                  value={newCategory.name}
-                  onChange={(e) => setNewCategory({...newCategory, name: e.target.value})}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="description">Descrição (opcional)</Label>
-                <Textarea 
-                  id="description" 
-                  placeholder="Descreva o propósito desta categoria"
-                  value={newCategory.description}
-                  onChange={(e) => setNewCategory({...newCategory, description: e.target.value})}
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowNewCategoryDialog(false)}>
-                Cancelar
-              </Button>
-              <Button onClick={createCategory}>Criar Categoria</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Dialog para Nova Mensagem */}
-        <Dialog open={showMessageDialog} onOpenChange={(open) => {
-          setShowMessageDialog(open);
-          if (!open) {
-            setEditingMessage(null);
-            setMessageForm({ content: '', category_id: '' });
-          }
-        }}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{editingMessage ? 'Editar Mensagem' : 'Nova Mensagem'}</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="category" className="text-right">
-                  Categoria
-                </Label>
-                <select
-                  id="category"
-                  className="col-span-3"
-                  value={messageForm.category_id || selectedCategory || ''}
-                  onChange={(e) => setMessageForm({ ...messageForm, category_id: e.target.value })}
-                >
-                  <option value="">Selecione uma categoria</option>
-                  {categories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="content" className="text-right">
-                  Mensagem
-                </Label>
-                <Textarea
-                  id="content"
-                  className="col-span-3 min-h-[100px]"
-                  placeholder="Digite sua mensagem aqui..."
-                  value={messageForm.content}
-                  onChange={(e) => setMessageForm({ ...messageForm, content: e.target.value })}
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => {
-                setShowMessageDialog(false);
-                setEditingMessage(null);
-                setMessageForm({ content: '', category_id: '' });
-              }}>
-                Cancelar
-              </Button>
-              <Button onClick={saveMessage}>
-                {editingMessage ? 'Salvar' : 'Criar'}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Biblioteca de Mensagens</h1>
+          <p className="text-gray-600 mt-2">Gerencie suas categorias e templates de mensagens</p>
+        </div>
+        <Button onClick={() => setShowCategoryDialog(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          Nova Categoria
+        </Button>
       </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Categories */}
+        <div className="lg:col-span-1">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <FolderOpen className="h-5 w-5 mr-2" />
+                Categorias
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                </div>
+              ) : categories.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">Nenhuma categoria encontrada</p>
+                  <Button
+                    variant="outline"
+                    className="mt-4"
+                    onClick={() => setShowCategoryDialog(true)}
+                  >
+                    Criar primeira categoria
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {categories.map((category) => (
+                    <div
+                      key={category.id}
+                      className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                        selectedCategory === category.id
+                          ? 'bg-blue-50 border-blue-200'
+                          : 'hover:bg-gray-50'
+                      }`}
+                      onClick={() => setSelectedCategory(category.id)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="font-medium">{category.name}</h3>
+                          {category.description && (
+                            <p className="text-sm text-gray-500">{category.description}</p>
+                          )}
+                          <div className="flex items-center gap-2 mt-1">
+                            {category.segment && (
+                              <Badge variant="secondary" className="text-xs">
+                                {category.segment}
+                              </Badge>
+                            )}
+                            <span className="text-xs text-gray-500">
+                              0 templates
+                            </span>
+                          </div>
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent>
+                            <DropdownMenuItem onClick={() => openEditCategory(category)}>
+                              <Edit className="h-4 w-4 mr-2" />
+                              Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleDeleteCategory(category.id)}
+                              className="text-red-600"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Excluir
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Templates */}
+        <div className="lg:col-span-2">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center">
+                  <MessageSquare className="h-5 w-5 mr-2" />
+                  Templates de Mensagem
+                </CardTitle>
+                {selectedCategory && (
+                  <Button onClick={() => setShowTemplateDialog(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Novo Template
+                  </Button>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              {!selectedCategory ? (
+                <div className="text-center py-12">
+                  <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500">Selecione uma categoria para ver os templates</p>
+                </div>
+              ) : templates.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-gray-500">Nenhum template encontrado</p>
+                  <Button
+                    variant="outline"
+                    className="mt-4"
+                    onClick={() => setShowTemplateDialog(true)}
+                  >
+                    Criar primeiro template
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {templates.map((template) => (
+                    <div
+                      key={template.id}
+                      className="p-4 border rounded-lg hover:bg-gray-50"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="prose prose-sm max-w-none">
+                            <p className="whitespace-pre-wrap">{template.content}</p>
+                          </div>
+                          {template.variables_used && template.variables_used.length > 0 && (
+                            <div className="mt-3">
+                              <p className="text-sm font-medium text-gray-700 mb-1">Variáveis:</p>
+                              <div className="flex flex-wrap gap-1">
+                                {template.variables_used.map((variable) => (
+                                  <Badge key={variable} variant="outline" className="text-xs">
+                                    {`{{${variable}}}`}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          <div className="flex items-center gap-4 mt-3 text-sm text-gray-500">
+                            <span>Usado {template.usage_count} vezes</span>
+                            {template.response_rate && (
+                              <span>Taxa de resposta: {(template.response_rate * 100).toFixed(1)}%</span>
+                            )}
+                          </div>
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent>
+                            <DropdownMenuItem onClick={() => openEditTemplate(template)}>
+                              <Edit className="h-4 w-4 mr-2" />
+                              Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleDeleteTemplate(template.id)}
+                              className="text-red-600"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Excluir
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Category Dialog */}
+      <Dialog open={showCategoryDialog} onOpenChange={setShowCategoryDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {editingCategory ? 'Editar Categoria' : 'Nova Categoria'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="name">Nome</Label>
+              <Input
+                id="name"
+                value={newCategory.name}
+                onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
+                placeholder="Ex: Restaurantes"
+              />
+            </div>
+            <div>
+              <Label htmlFor="description">Descrição</Label>
+              <Textarea
+                id="description"
+                value={newCategory.description}
+                onChange={(e) => setNewCategory({ ...newCategory, description: e.target.value })}
+                placeholder="Descrição da categoria..."
+              />
+            </div>
+            <div>
+              <Label htmlFor="segment">Segmento</Label>
+              <Input
+                id="segment"
+                value={newCategory.segment}
+                onChange={(e) => setNewCategory({ ...newCategory, segment: e.target.value })}
+                placeholder="Ex: Alimentação"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCategoryDialog(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={editingCategory ? handleUpdateCategory : handleCreateCategory}>
+              {editingCategory ? 'Atualizar' : 'Criar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Template Dialog */}
+      <Dialog open={showTemplateDialog} onOpenChange={setShowTemplateDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              {editingTemplate ? 'Editar Template' : 'Novo Template'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="content">Conteúdo da Mensagem</Label>
+              <Textarea
+                id="content"
+                value={newTemplate.content}
+                onChange={(e) => handleTemplateContentChange(e.target.value)}
+                placeholder="Digite sua mensagem aqui... Use {{variavel}} para campos dinâmicos"
+                className="min-h-32"
+              />
+            </div>
+            {newTemplate.variables_used.length > 0 && (
+              <div>
+                <Label>Variáveis Detectadas</Label>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {newTemplate.variables_used.map((variable) => (
+                    <Badge key={variable} variant="secondary">
+                      {`{{${variable}}}`}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowTemplateDialog(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={editingTemplate ? handleUpdateTemplate : handleCreateTemplate}>
+              {editingTemplate ? 'Atualizar' : 'Criar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
 
-export default MessageLibrary; 
+export default MessageLibrary;

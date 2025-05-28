@@ -19,7 +19,7 @@ type TableName =
   | 'campaign_leads'
   | 'lead_tags';
 
-export function useSupabaseData<T>(
+export function useSupabaseData<T = any>(
   tableName: TableName,
   options?: {
     defaultData?: T[];
@@ -42,12 +42,8 @@ export function useSupabaseData<T>(
     setError(null);
 
     try {
-      let query = supabase.from(tableName).select('*');
+      const query = supabase.from(tableName).select('*');
       
-      if (options?.queryFilter) {
-        query = options.queryFilter(query);
-      }
-
       const { data: result, error } = await query;
 
       if (error) throw error;

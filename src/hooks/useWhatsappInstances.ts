@@ -53,7 +53,7 @@ export function useWhatsappInstances() {
     }
   };
 
-  const updateInstance = async (id: string, updates: Partial<WhatsappInstance>) => {
+  const updateInstance = async (id: string, updates: Partial<Omit<WhatsappInstance, 'id' | 'created_at' | 'updated_at'>>) => {
     try {
       const { data, error } = await supabase
         .from('whatsapp_instances')
@@ -93,7 +93,6 @@ export function useWhatsappInstances() {
   };
 
   const allocateInstance = async (userId: string): Promise<WhatsappInstance> => {
-    // Simulated allocation for free users
     const availableInstance = instances.find(inst => inst.is_available);
     if (!availableInstance) {
       throw new Error('Nenhuma instância disponível');
@@ -103,12 +102,10 @@ export function useWhatsappInstances() {
   };
 
   const releaseInstance = async (instanceId: string, userId: string) => {
-    // Simulated release
     toast.success('Instância liberada');
   };
 
   const disconnectUser = async (instanceId: string, userId: string) => {
-    // Simulated disconnect
     toast.success('Usuário desconectado da instância');
   };
 
