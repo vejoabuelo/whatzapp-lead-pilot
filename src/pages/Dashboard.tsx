@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import Sidebar from "@/components/dashboard/Sidebar";
+import ModernSidebar from "@/components/dashboard/ModernSidebar";
 import { PlusCircle, RefreshCcw, Bell } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -25,7 +25,7 @@ const Dashboard = () => {
 
   return (
     <div className="flex h-screen bg-gray-50">
-      <Sidebar />
+      <ModernSidebar />
       <div className="flex-1 overflow-auto">
         <header className="bg-white border-b border-gray-200 py-4 px-6 sticky top-0 z-10">
           <div className="flex items-center justify-between">

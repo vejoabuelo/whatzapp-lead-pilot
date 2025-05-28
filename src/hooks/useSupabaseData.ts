@@ -25,11 +25,11 @@ interface UseSupabaseDataOptions {
   fetchOnMount?: boolean;
 }
 
-export function useSupabaseData<T = any>(
+export function useSupabaseData<T extends Record<string, any> = Record<string, any>>(
   tableName: TableName,
   options?: UseSupabaseDataOptions
 ) {
-  const [data, setData] = useState<T[]>(options?.defaultData || []);
+  const [data, setData] = useState<T[]>((options?.defaultData as T[]) || []);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
@@ -54,7 +54,7 @@ export function useSupabaseData<T = any>(
 
       if (error) throw error;
 
-      setData(result || []);
+      setData((result as T[]) || []);
     } catch (err) {
       console.error(`Error fetching data from ${tableName}:`, err);
       setError(err as Error);
@@ -74,9 +74,9 @@ export function useSupabaseData<T = any>(
       if (error) throw error;
 
       if (result && result[0]) {
-        setData(prev => [...prev, result[0]]);
+        setData(prev => [...prev, result[0] as T]);
         toast.success('Item adicionado com sucesso');
-        return result[0];
+        return result[0] as T;
       }
     } catch (err) {
       console.error(`Error adding item to ${tableName}:`, err);
@@ -97,10 +97,10 @@ export function useSupabaseData<T = any>(
 
       if (result && result[0]) {
         setData(prev => prev.map(item => 
-          (item as any).id === id ? result[0] : item
+          item.id === id ? result[0] as T : item
         ));
         toast.success('Item atualizado com sucesso');
-        return result[0];
+        return result[0] as T;
       }
     } catch (err) {
       console.error(`Error updating item in ${tableName}:`, err);
@@ -118,7 +118,7 @@ export function useSupabaseData<T = any>(
 
       if (error) throw error;
 
-      setData(prev => prev.filter(item => (item as any).id !== id));
+      setData(prev => prev.filter(item => item.id !== id));
       toast.success('Item removido com sucesso');
     } catch (err) {
       console.error(`Error deleting item from ${tableName}:`, err);

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from "@/components/ui/sonner";
@@ -25,7 +26,6 @@ import SuperAdminMonitoring from '@/pages/SuperAdminMonitoring';
 import { useAuth } from "./providers/AuthProvider";
 import { LogOut } from "lucide-react";
 import MessageLibrary from "@/pages/MessageLibrary";
-import WhatsAppConnections from '@/pages/Messages';
 
 function App() {
   const { signOut } = useAuth();
@@ -65,7 +65,7 @@ function App() {
         } />
         <Route path="/whatsapp-connections" element={
           <PrivateRoute>
-            <WhatsAppConnections />
+            <Messages />
           </PrivateRoute>
         } />
         <Route path="/messages/library" element={
