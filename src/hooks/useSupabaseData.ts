@@ -52,7 +52,7 @@ export function useSupabaseData<T = any>(
 
       if (error) throw error;
 
-      setData((result as T[]) || []);
+      setData(result as T[] || []);
     } catch (err) {
       console.error(`Error fetching data from ${tableName}:`, err);
       setError(err as Error);
@@ -94,7 +94,9 @@ export function useSupabaseData<T = any>(
       if (error) throw error;
 
       if (result && result[0]) {
-        setData(prev => prev.map(item => (item as any).id === id ? result[0] as T : item));
+        setData(prev => prev.map(item => 
+          (item as any).id === id ? result[0] as T : item
+        ));
         toast.success('Item atualizado com sucesso');
         return result[0];
       }

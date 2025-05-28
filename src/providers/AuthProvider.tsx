@@ -1,5 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import type { User, Session } from '@supabase/supabase-js';
 import { Profile } from '@/types/database';
@@ -85,8 +86,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         if (session?.user) {
           fetchProfile(session.user.id);
+          // Redirecionar para dashboard após login bem-sucedido
+          if (event === 'SIGNED_IN') {
+            const currentPath = window.location.pathname;
+            if (currentPath === '/login' || currentPath === '/register') {
+              window.location.href = '/dashboard';
+            }
+          }
         } else {
           setProfile(null);
+          // Redirecionar para login quando logout
+          if (event === 'SIGNED_OUT') {
+            window.location.href = '/login';
+          }
         }
         
         setIsLoading(false);
